@@ -1,4 +1,4 @@
-extensions [ls table ]
+extensions [ls table string ]
 
 
 globals [
@@ -48,18 +48,18 @@ to simulate-eco-ls-system
   ;; calls their new variable "new grass regrowth time"
   ;; writes "(20 + abs (72 - temperature ))"
   ;; clicks OK, this then runs:  
-  add-entity "2-remove-some-co2" new-entity 2 "remove-CO2" [] "command" "OTPL"
+  add-entity "2-remove-some-co2" new-entity 2 "repeat n [remove-CO2]" ["n"] "command" "OTPL"
   
   ;; this asks WSP to call its own go every tick
-  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" "1-GO"
+  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
   ;; this asks cc to call its own go every tick
-  add-ls-interaction-between "2:Climate Change.nlogo" "2-GO"
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
   ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
-  add-ls-interaction-between "1-gassy-turtles" "2-ADD-CO2"
+  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
   ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
-  add-ls-interaction-between "2-new-grass-regrowth-time" "1-GRASS-REGROWTH-TIME"
+  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
   ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" "2-remove-some-co2"
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" []
   
 end
 
@@ -70,12 +70,23 @@ to run-relationships
   ]
 end
 
+to-report make-task [astring args]
+  let arg-no 0
+  let sb []
+  foreach string:rex-split astring " " [
+    ifelse member? ? args[
+      set sb lput (word "?" (position ? args + 1)) sb
+    ]
+    [
+      set sb lput ? sb      
+    ]  
+  ]
+  report string:from-list sb
+end
+
 
 
 to-report new-entity [model task-string args the-type permitted-contexts]
-  let args-string ""
-  repeat length args [set args-string (word args-string " ?")]
-  set task-string (word task-string args-string)
   let task-table table:make
   table:put task-table "model" model
   table:put task-table "to-string" task-string
@@ -181,7 +192,12 @@ to add-model-procedures [the-model]
     let procedure-name first ?
     let args last ?
     let the-type item 1 ?
-    add-entity (word the-model "-" procedure-name) new-entity the-model procedure-name args the-type item 2 ?
+    print args
+    let args-string ""
+    ;; procedures always have postfix argument, so this is easy: 
+    repeat length args [set args-string (word args-string " ?")]
+    let task-string (word procedure-name args-string)
+    add-entity (word the-model "-" procedure-name) new-entity the-model task-string args the-type item 2 ?
   ]
 end
 
@@ -220,7 +236,7 @@ to-report tasks-with [afilter]
   
 end
 
-to add-ls-interaction-between [entity1 entity2]
+to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let first-entity entity entity1 
   let second-entity entity entity2
   
