@@ -50,16 +50,18 @@ to simulate-eco-ls-system
   ;; clicks OK, this then runs:  
   add-entity "2-remove-some-co2" new-entity 2 "repeat n [remove-CO2]" ["n"] "command" "OTPL"
   
-  ;; this asks WSP to call its own go every tick
-  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
-  ;; this asks cc to call its own go every tick
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
-  ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
-  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
-  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
-  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
-  ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" [10]
+  add-entity "1-count-sheep" new-entity 1 "count sheep" [] "REPORTER" "OTPL"
+  
+;  ;; this asks WSP to call its own go every tick
+;  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
+;  ;; this asks cc to call its own go every tick
+;  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
+;  ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
+;  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
+;  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
+;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
+;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" ["1-count-sheep"]
   
 end
 
@@ -93,7 +95,6 @@ to-report new-entity [model task-string args the-type permitted-contexts]
   table:put task-table "args" args
   table:put task-table "type" the-type
   table:put task-table "contexts" permitted-contexts
-  show task-string
   let task-from-model ls:report model (word "task [ " task-string " ]")  
   ;; in terms of knowing how to compile the tasks, we need to know two things:
   ;; first, is it a command or a reporter - this is in the 'the-type' variable
@@ -132,7 +133,6 @@ end
 
 to-report get-eligible-interactions [an-entity]
   let the-type table:get an-entity "type"
-  print an-entity
   ;; if it's an observer, they can call observer commands in their own model
   if the-type = "observer"[
     report filter [
@@ -193,7 +193,6 @@ to add-model-procedures [the-model]
     let procedure-name first ?
     let args last ?
     let the-type item 1 ?
-    print args
     let args-string ""
     ;; procedures always have postfix argument, so this is easy: 
     repeat length args [set args-string (word args-string " ?")]
@@ -240,26 +239,50 @@ end
 to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let first-entity entity entity1 
   let second-entity entity entity2
-  
+    ;; we need to turn the arguments into a list of tasks
+  let arg-as-tasks map [arg-to-task ?] ent2args  
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
   if (first-entity-type = "agentset")[
     if second-entity-type = "COMMAND"[
       ; if an agenset interacts with a command, each member of the agenset calls the command
-      let atask task [ask (run-result get-task first-entity ent1args) [(run get-task second-entity ent2args)]]
-      add-relationship atask entity1 entity2
+      let atask task [
+        ;; the first thing we always do is resolve the args
+        let actual-args map [run-result ?] arg-as-tasks
+        ask (run-result get-task first-entity ent1args) [(
+            run get-task second-entity actual-args)]
+        ]
+      add-relationship atask entity1 entity2 ent2args
     ]
   ]
   if first-entity-type = "observer"[
     if second-entity-type = "command" or second-entity-type = "COMMAND" [
-      show first-entity
-      show second-entity
       let the-observer-id get-model first-entity
       let the-command get-string second-entity
-      let the-task task [(ls:ask the-observer-id the-command ent2args)]
-      add-relationship the-task entity1 entity2
+      let the-task task [
+        ;; again here we first resolve the args
+        let actual-args map [run-result ?] arg-as-tasks
+        (ls:ask the-observer-id the-command resolved-args actual-args)]
+      add-relationship the-task entity1 entity2 ent2args
     ]
   ]
+end
+
+to-report arg-to-task [arg]
+  ;; it's either an entity key, or it's a literal. In the case of the former we get the task
+  if member? arg table:keys tasks[
+    report get-task table:get tasks arg
+  ]
+  ;; incase of the latter, we wrap literal arguments in a reporter task here
+  if (is-number? arg or is-string? arg or is-list? arg)[
+    report task [arg]
+  ]
+
+end
+
+to-report resolved-args [args]
+  print args
+;  report map [run-result ?] args
 end
 
 to-report all-relationships
@@ -281,12 +304,11 @@ to-report get-model [the-entity]
 end
 
 to-report entity [entity-name]
-  ;  print entity-name
   report table:get tasks entity-name
 end
 
-to add-relationship [atask entity1-name entity2-name]
-  table:put relationships relationship-counter (list atask entity1-name entity2-name)
+to add-relationship [atask entity1-name entity2-name args]
+  table:put relationships relationship-counter (list atask entity1-name entity2-name args)
   set relationship-counter relationship-counter + 1
 end
 
