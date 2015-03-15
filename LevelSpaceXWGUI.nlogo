@@ -48,9 +48,13 @@ to simulate-eco-ls-system
   ;; calls their new variable "new grass regrowth time"
   ;; writes "(20 + abs (72 - temperature ))"
   ;; clicks OK, this then runs:  
-  add-entity "2-remove-some-co2" new-entity 2 "repeat n [remove-CO2]" ["n"] "command" "OTPL"
+  add-entity "2-add-some-co2" new-entity 2 "repeat n [add-CO2]" ["n"] "command" "OTPL"
   
   add-entity "1-count-sheep" new-entity 1 "count sheep" [] "REPORTER" "OTPL"
+  
+  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "COMMAND" "-T--"
+  
+  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "REPORTER" "-T--"
   
 ;  ;; this asks WSP to call its own go every tick
 ;  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
@@ -61,13 +65,14 @@ to simulate-eco-ls-system
 ;  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
 ;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
 ;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" ["1-count-sheep"]
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" ["1-count-sheep"]
   
 end
 
 
 to run-relationships
   foreach table:to-list relationships [
+    show first last ?
     run first last ?
   ]
 end
@@ -83,6 +88,7 @@ to-report make-variadic-task [astring args]
       set sb lput ? sb      
     ]  
   ]
+  show string:from-list sb
   report string:from-list sb
 end
 
@@ -240,30 +246,36 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let first-entity entity entity1 
   let second-entity entity entity2
     ;; we need to turn the arguments into a list of tasks
-  let arg-as-tasks map [arg-to-task ?] ent2args  
+  let arg1-as-tasks map [arg-to-task ?] ent1args  
+  let arg2-as-tasks map [arg-to-task ?] ent2args  
+  
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
   if (first-entity-type = "agentset")[
-    if second-entity-type = "COMMAND"[
+    if second-entity-type = "COMMAND" or second-entity-type = "command" [
       ; if an agenset interacts with a command, each member of the agenset calls the command
       let atask task [
         ;; the first thing we always do is resolve the args
-        let actual-args map [run-result ?] arg-as-tasks
-        ask (run-result get-task first-entity ent1args) [(
-            run get-task second-entity actual-args)]
+        let actual-args1 map [(run-result ? [])] arg1-as-tasks
+        let actual-args2 map [(run-result ? [])] arg2-as-tasks
+        ask (run-result get-task first-entity actual-args1) [(
+            run get-task second-entity actual-args2)]
         ]
-      add-relationship atask entity1 entity2 ent2args
+      add-relationship atask entity1 ent1args entity2 ent2args
     ]
   ]
   if first-entity-type = "observer"[
+    ;; observers will never have args, so we disregard the first args here
     if second-entity-type = "command" or second-entity-type = "COMMAND" [
       let the-observer-id get-model first-entity
       let the-command get-string second-entity
       let the-task task [
+
         ;; again here we first resolve the args
-        let actual-args map [run-result ?] arg-as-tasks
-        (ls:ask the-observer-id the-command resolved-args actual-args)]
-      add-relationship the-task entity1 entity2 ent2args
+;        let actual-args1 map [(run-result ? [] )] arg1-as-tasks
+        let actual-args2 map [(run-result ? [] )] arg2-as-tasks
+        (ls:ask the-observer-id the-command actual-args2)]
+      add-relationship the-task entity1 ent1args entity2 ent2args
     ]
   ]
 end
@@ -278,11 +290,6 @@ to-report arg-to-task [arg]
     report task [arg]
   ]
 
-end
-
-to-report resolved-args [args]
-  print args
-;  report map [run-result ?] args
 end
 
 to-report all-relationships
@@ -307,8 +314,8 @@ to-report entity [entity-name]
   report table:get tasks entity-name
 end
 
-to add-relationship [atask entity1-name entity2-name args]
-  table:put relationships relationship-counter (list atask entity1-name entity2-name args)
+to add-relationship [atask entity1-name arg1 entity2-name arg2]
+  table:put relationships relationship-counter (list atask entity1-name arg1 entity2-name arg2)
   set relationship-counter relationship-counter + 1
 end
 
