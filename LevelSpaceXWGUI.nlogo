@@ -37,6 +37,7 @@ to simulate-eco-ls-system
   ;; writes "trltes with [energy > 5]"
   ;; Clicks OK. This is then run:
   add-entity "1-gassy-turtles" new-entity 1 "turtles with [energy > 50]" [] "agentset" "OTPL"
+  add-entity "1-gassiness" new-entity 1 "energy / 5" [] "value" "T"
   ;; user chooses CC model (model 2)
   ;; chooses "calculate value"
   ;; calls their new variable "new grass regrowth time"
@@ -49,17 +50,19 @@ to simulate-eco-ls-system
   ;; writes "(20 + abs (72 - temperature ))"
   ;; clicks OK, this then runs:  
   add-entity "2-remove-some-co2" new-entity 2 "repeat n [remove-CO2]" ["n"] "command" "OTPL"
+  add-entity "1-grass" new-entity 1 "count patches with [ pcolor = green ] / 100" [] "value" "OTPL"
+  add-entity "2-add-some-co2" new-entity 2 "repeat n [add-CO2]" ["n"] "command" "OTPL"
   
   ;; this asks WSP to call its own go every tick
   add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
   ;; this asks cc to call its own go every tick
   add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
   ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
-  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
+  add-ls-interaction-between "1-gassy-turtles" [] "2-add-some-co2" (list get-task entity "1-gassiness")
   ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
   add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
   ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" [10]
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-remove-some-co2" (list get-task entity "1-grass")
   
 end
 
@@ -246,7 +249,11 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   if (first-entity-type = "agentset")[
     if second-entity-type = "COMMAND"[
       ; if an agenset interacts with a command, each member of the agenset calls the command
-      let atask task [ask (run-result get-task first-entity ent1args) [(run get-task second-entity ent2args)]]
+      let atask task [
+        ask (run-result get-task first-entity (map runresult ent1args)) [
+          (run get-task second-entity (map runresult ent2args))
+        ]
+      ]
       add-relationship atask entity1 entity2
     ]
   ]
@@ -256,7 +263,7 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
       show second-entity
       let the-observer-id get-model first-entity
       let the-command get-string second-entity
-      let the-task task [(ls:ask the-observer-id the-command ent2args)]
+      let the-task task [(ls:ask the-observer-id the-command (map [(runresult ? [])] ent2args))]
       add-relationship the-task entity1 entity2
     ]
   ]
