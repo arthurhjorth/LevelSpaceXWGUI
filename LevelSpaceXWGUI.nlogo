@@ -50,10 +50,10 @@ to simulate-eco-ls-system
   ;; clicks OK, this then runs:  
   add-entity "2-add-some-co2" new-entity 2 "repeat n [add-CO2]" ["n"] "command" "OTPL"
   
-  add-entity "1-count-sheep" new-entity 1 "count sheep" [] "REPORTER" "OTPL"
+  add-entity "1-count-sheep" new-entity 1 "count sheep" [] "reporter" "OTPL"
   
-  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "COMMAND" "-T--"
-  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "REPORTER" "-T--"
+  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
+  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "reporter" "-T--"
   
 ;  ;; this asks WSP to call its own go every tick
 ;  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
@@ -64,11 +64,11 @@ to simulate-eco-ls-system
 ;  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
 ;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
 ;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" ["1-count-sheep"]
+  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" (list entity-to-task "1-count-sheep")
 
-  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "COMMAND" "-T--"
+  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
   add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "agentset" "-T--"
-  add-ls-interaction-between "1-starving-sheep" [5] "1-color-sheep" [red]
+  add-ls-interaction-between "1-starving-sheep" (list literal-to-task 5) "1-color-sheep" (list literal-to-task red)
 end
 
 
@@ -197,20 +197,20 @@ end
 
 to add-model-procedures [the-model]
   foreach ls:_model-procedures the-model [
-    let procedure-name first ?
-    let args last ?
-    let the-type item 1 ?
+    let procedure-name string:lower-case first ?
+    let args map [string:lower-case ?] last ?
+    let the-type string:lower-case   item 1 ?
     let args-string ""
     ;; procedures always have postfix argument, so this is easy: 
     repeat length args [set args-string (word args-string " ?")]
-    let task-string (word procedure-name args-string)
+    let task-string string:lower-case  (word procedure-name args-string)
     add-entity (word the-model "-" procedure-name) new-entity the-model task-string args the-type item 2 ?
   ]
 end
 
 to add-model-globals [the-model]
   foreach ls:_globals the-model [
-    let global-name ?
+    let global-name string:lower-case ?
     let args []
     ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
     ;; reporters, but we may want to set globals?
@@ -222,6 +222,17 @@ end
 
 to add-model-breeds [the-model]
   foreach map [first ?] ls:_list-breeds the-model [
+    let agents string:lower-case ?
+    let args []
+    ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
+    ;; reporters, but we may want to set globals?
+    ;; setting to value now, might not be right though......
+    let the-type "agentset"
+    add-entity (word the-model "-" agents) new-entity the-model agents args the-type "OTLP"
+    
+  ]
+  ;; finally add patches, links, and turtles
+  foreach (list "turtles" "patches" "links")[
     let agents ?
     let args []
     ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
@@ -243,14 +254,15 @@ to-report tasks-with [afilter]
   
 end
 
+;; args are a list of tasks ONLY
 to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let first-entity entity entity1 
   let second-entity entity entity2
   print first-entity
   print second-entity
     ;; we need to turn the arguments into a list of tasks
-  let arg1-as-tasks map [arg-to-task ?] ent1args  
-  let arg2-as-tasks map [arg-to-task ?] ent2args  
+;  let arg1-as-tasks map [arg-to-task ?] ent1args  
+;  let arg2-as-tasks map [arg-to-task ?] ent2args  
   
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
@@ -260,8 +272,8 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
       ; if an agenset interacts with a command, each member of the agenset calls the command
       let atask task [
         ;; the first thing we always do is resolve the args
-        let actual-args1 map [(run-result ? [])] arg1-as-tasks
-        let actual-args2 map [(run-result ? [])] arg2-as-tasks
+        let actual-args1 map [(run-result ? [])] ent1args
+        let actual-args2 map [(run-result ? [])] ent2args
         ask (run-result get-task first-entity actual-args1) [(
             run get-task second-entity actual-args2)]
         ]
@@ -275,11 +287,20 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
       let the-command get-string second-entity
       let the-task task [
         ;; again here we first resolve the args
-        let actual-args2 map [(run-result ? [] )] arg2-as-tasks
+        print ent2args
+        let actual-args2 map [(run-result ? [] )] ent2args
         (ls:ask the-observer-id the-command actual-args2)]
       add-relationship the-task entity1 ent1args entity2 ent2args
     ]
   ]
+end
+
+to-report literal-to-task [a-literal]
+  report task [a-literal]
+end
+
+to-report entity-to-task [entity-name]
+  report get-task entity entity-name
 end
 
 to-report arg-to-task [arg]
@@ -328,6 +349,23 @@ end
 to-report all-agent-entities
   report filter [table:get last ? "type" = "agentset" or table:get last ? "type" = "observer"] table:to-list tasks 
 end
+
+
+
+
+
+
+
+
+
+
+;; Now for GUI plumbing
+
+;; first users load n models
+;; we always have access to models in ls:models, so no need to save that anywhere
+
+;; we turn all models into agents:
+;; -- (oh, need to add turtles too)
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
