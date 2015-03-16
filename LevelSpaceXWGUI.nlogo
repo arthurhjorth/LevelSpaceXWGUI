@@ -53,7 +53,6 @@ to simulate-eco-ls-system
   add-entity "1-count-sheep" new-entity 1 "count sheep" [] "REPORTER" "OTPL"
   
   add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "COMMAND" "-T--"
-  
   add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "REPORTER" "-T--"
   
 ;  ;; this asks WSP to call its own go every tick
@@ -66,7 +65,10 @@ to simulate-eco-ls-system
 ;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
 ;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
   add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" ["1-count-sheep"]
-  
+
+  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "COMMAND" "-T--"
+  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "agentset" "-T--"
+  add-ls-interaction-between "1-starving-sheep" [5] "1-color-sheep" [red]
 end
 
 
@@ -88,7 +90,6 @@ to-report make-variadic-task [astring args]
       set sb lput ? sb      
     ]  
   ]
-  show string:from-list sb
   report string:from-list sb
 end
 
@@ -245,6 +246,8 @@ end
 to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let first-entity entity entity1 
   let second-entity entity entity2
+  print first-entity
+  print second-entity
     ;; we need to turn the arguments into a list of tasks
   let arg1-as-tasks map [arg-to-task ?] ent1args  
   let arg2-as-tasks map [arg-to-task ?] ent2args  
@@ -253,6 +256,7 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
   let second-entity-type table:get second-entity "type"
   if (first-entity-type = "agentset")[
     if second-entity-type = "COMMAND" or second-entity-type = "command" [
+      show "her"
       ; if an agenset interacts with a command, each member of the agenset calls the command
       let atask task [
         ;; the first thing we always do is resolve the args
@@ -270,9 +274,7 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
       let the-observer-id get-model first-entity
       let the-command get-string second-entity
       let the-task task [
-
         ;; again here we first resolve the args
-;        let actual-args1 map [(run-result ? [] )] arg1-as-tasks
         let actual-args2 map [(run-result ? [] )] arg2-as-tasks
         (ls:ask the-observer-id the-command actual-args2)]
       add-relationship the-task entity1 ent1args entity2 ent2args
