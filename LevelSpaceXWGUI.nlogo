@@ -6,21 +6,26 @@ globals [
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
   test-var
   relationship-counter
+  wsp
+  cc
 ]
 
 
-to setup
+to setup    
   ca
   ls:reset
   set tasks table:make
   set relationships table:make
   set relationship-counter 0
   load-and-setup-model "arg-test.nlogo"
-  load-and-setup-model "Wolf Sheep Predation.nlogo"
+  load-and-setup-model "Wolf Sheep Predation.nlogo" 
   load-and-setup-model "Climate Change.nlogo"
+  set wsp 1
+  set cc 2
   ls:close 0
-  ls:ask 1 "set grass? true"
-  ls:ask [1 2] "setup"
+  ls:ask wsp "set grass? true"
+  ls:ask wsp "setup"
+  ls:ask cc "import-world \"ls-gui-setup\""
   ls:show 1
   ls:show 2
 end
@@ -29,52 +34,55 @@ to go
   run-relationships
 end
 
+to test
+  add-entity "1-sheep-energy" new-entity 1  "sheep with [ an-expression ]" ["an-expression"] "agentset" "-T--"
+end
+
 to simulate-eco-ls-system
   setup
-  ;; user chooses WSP model (model 1)
-  ;; clicks "select some agents"
-  ;; names their new variable 'gassy-turtles'
-  ;; writes "trltes with [energy > 5]"
-  ;; Clicks OK. This is then run:
-  add-entity "1-gassy-turtles" new-entity 1 "turtles with [energy > 50]" [] "agentset" "OTPL"
-  ;; user chooses CC model (model 2)
-  ;; chooses "calculate value"
-  ;; calls their new variable "new grass regrowth time"
-  ;; writes "(20 + abs (72 - temperature ))"
-  ;; clicks OK, this then runs:
-  add-entity "2-new-grass-regrowth-time" new-entity 2 "(20 + abs (72 - temperature ))" [] "value" "OTPL"
-  ;; user chooses CC model (model 2)
-  ;; chooses "calculate value"
-  ;; calls their new variable "new grass regrowth time"
-  ;; writes "(20 + abs (72 - temperature ))"
-  ;; clicks OK, this then runs:  
-  add-entity "2-add-some-co2" new-entity 2 "repeat n [add-CO2]" ["n"] "command" "OTPL"
-  
-  add-entity "1-count-sheep" new-entity 1 "count sheep" [] "reporter" "OTPL"
-  
-  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
-  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "reporter" "-T--"
-  
-;  ;; this asks WSP to call its own go every tick
-;  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
-;  ;; this asks cc to call its own go every tick
-;  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
-;  ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
-;  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
-;  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
-;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
-;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
-  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" (list entity-to-task "1-count-sheep")
-
-  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
-  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "agentset" "-T--"
-  add-ls-interaction-between "1-starving-sheep" (list literal-to-task 5) "1-color-sheep" (list literal-to-task red)
+;  ;; user chooses WSP model (model 1)
+;  ;; clicks "select some agents"
+;  ;; names their new variable 'gassy-turtles'
+;  ;; writes "trltes with [energy > 5]"
+;  ;; Clicks OK. This is then run:
+;  add-entity "1-gassy-turtles" new-entity 1 "turtles with [energy > 50]" [] "agentset" "OTPL"
+;  ;; user chooses CC model (model 2)
+;  ;; chooses "calculate value"
+;  ;; calls their new variable "new grass regrowth time"
+;  ;; writes "(20 + abs (72 - temperature ))"
+;  ;; clicks OK, this then runs:
+;  add-entity "2-new-grass-regrowth-time" new-entity 2 "(20 + abs (72 - temperature ))" [] "value" "OTPL"
+;  ;; user chooses CC model (model 2)
+;  ;; chooses "calculate value"
+;  ;; calls their new variable "new grass regrowth time"
+;  ;; writes "(20 + abs (72 - temperature ))"
+;  ;; clicks OK, this then runs:  
+;  add-entity "2-add-some-co2" new-entity 2 "repeat n [add-CO2]" ["n"] "command" "OTPL"
+;  
+;  add-entity "1-count-sheep" new-entity 1 "count sheep" [] "reporter" "OTPL"
+;  
+;  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
+;  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "reporter" "-T--"
+;  
+;;  ;; this asks WSP to call its own go every tick
+;;  add-ls-interaction-between "1:Wolf Sheep Predation.nlogo" [] "1-GO" []
+;;  ;; this asks cc to call its own go every tick
+;;  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-GO" []
+;;  ;; this creates an interaction between gassy turtles (agentset) and add-co2 (observer command)
+;;  add-ls-interaction-between "1-gassy-turtles" [] "2-ADD-CO2" []
+;;  ;; this creates a relationship between new grass regrowth time (value) and grass-regrowth-time (value)
+;;  add-ls-interaction-between "2-new-grass-regrowth-time" [] "1-GRASS-REGROWTH-TIME" []
+;;  ; this creates a relationship between the cc model (observer) and a command in itself (command)
+;  add-ls-interaction-between "2:Climate Change.nlogo" [] "2-add-some-co2" (list entity-to-task "1-count-sheep")
+;
+;  add-entity "1-color-sheep" new-entity 1 "set color a-color" ["a-color"] "command" "-T--"
+;  add-entity "1-starving-sheep" new-entity 1 "sheep with [ energy < min-energy ]" ["min-energy"] "agentset" "-T--"
+;  add-ls-interaction-between "1-starving-sheep" (list literal-to-task 5) "1-color-sheep" (list literal-to-task red)
 end
 
 
 to run-relationships
   foreach table:to-list relationships [
-    show first last ?
     run first last ?
   ]
 end
@@ -82,6 +90,8 @@ end
 to-report make-variadic-task [astring args]
   let arg-no 0
   let sb []
+  ;; add spaces so that we can test for hard brackets
+  set astring add-spaces astring
   foreach string:rex-split astring " " [
     ifelse member? ? args[
       set sb lput (word "(item " (position ? args) " ?)") sb
@@ -90,12 +100,14 @@ to-report make-variadic-task [astring args]
       set sb lput ? sb      
     ]  
   ]
-  report string:from-list sb
+  report string:from-list sb " "
 end
 
 
 to-report new-entity [model task-string args the-type permitted-contexts]
-  set task-string (make-variadic-task task-string args)
+  if length args > 0 [
+    set task-string (make-variadic-task task-string args)
+  ]
   let task-table table:make
   table:put task-table "model" model
   table:put task-table "to-string" task-string
@@ -138,32 +150,36 @@ to-report new-entity [model task-string args the-type permitted-contexts]
 end
 
 
-to-report get-eligible-interactions [an-entity]
+to-report get-eligible-interactions [an-entity-name]
+  let an-entity entity an-entity-name
   let the-type table:get an-entity "type"
   ;; if it's an observer, they can call observer commands in their own model
   if the-type = "observer"[
-    report filter [
-      table:get last ? "type" = "COMMAND" and 
+    report map [first ?] filter [
+      table:get last ? "type" = "command" and 
       member? "O" table:get last ? "contexts" 
-    ] table:to-list tasks 
+    ] 
+    table:to-list tasks 
   ]  
   ;; if it's an agentset, they can call turtle commands in their own model or observer commands in other models
   if the-type = "agentset"[
-    report filter [
-      (table:get last ? "type" = "COMMAND" and 
-      member? "T" table:get last ? "contexts" and
-      table:get last ? "model" = table:get an-entity "model"
-      )
+    report map [first ?] filter [
+      (table:get last ? "type" = "command" and 
+        member? "T" table:get last ? "contexts" and
+        table:get last ? "model" = table:get an-entity "model"
+        )
       or
-      table:get last ? "type" = "COMMAND" and 
+      table:get last ? "type" = "command" and 
       member? "O" table:get last ? "contexts"  and     
       table:get last ? "model" != table:get an-entity "model"
-    ] table:to-list tasks 
+    ] 
+    table:to-list tasks 
   ]
   if the-type = "value"[
     report filter [
       table:get last ? "type" = "value"
-    ] table:to-list tasks 
+    ] 
+    table:to-list tasks 
   ]  
   report (list "poop")
 end
@@ -191,6 +207,7 @@ to add-observer [the-model]
   let observer-entity table:make
   table:put observer-entity "model" the-model
   table:put observer-entity "type" the-type
+  table:put observer-entity "args" []
   table:put tasks name observer-entity
   
 end
@@ -246,29 +263,18 @@ end
 
 
 
-to-report all-observers
-  
-end
-
 to-report tasks-with [afilter]
   
 end
 
 ;; args are a list of tasks ONLY
-to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
+to add-ls-interaction-between  [entity1 ent1args entity2 ent2args ent1argstring ent2argstring]
   let first-entity entity entity1 
   let second-entity entity entity2
-  print first-entity
-  print second-entity
-    ;; we need to turn the arguments into a list of tasks
-;  let arg1-as-tasks map [arg-to-task ?] ent1args  
-;  let arg2-as-tasks map [arg-to-task ?] ent2args  
-  
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
   if (first-entity-type = "agentset")[
     if second-entity-type = "COMMAND" or second-entity-type = "command" [
-      show "her"
       ; if an agenset interacts with a command, each member of the agenset calls the command
       let atask task [
         ;; the first thing we always do is resolve the args
@@ -277,20 +283,19 @@ to add-ls-interaction-between  [entity1 ent1args entity2 ent2args]
         ask (run-result get-task first-entity actual-args1) [(
             run get-task second-entity actual-args2)]
         ]
-      add-relationship atask entity1 ent1args entity2 ent2args
+      add-relationship atask entity1 ent1args entity2 ent2args  ent1argstring ent2argstring
     ]
   ]
   if first-entity-type = "observer"[
     ;; observers will never have args, so we disregard the first args here
-    if second-entity-type = "command" or second-entity-type = "COMMAND" [
+    if second-entity-type = "command" [
       let the-observer-id get-model first-entity
       let the-command get-string second-entity
       let the-task task [
         ;; again here we first resolve the args
-        print ent2args
         let actual-args2 map [(run-result ? [] )] ent2args
         (ls:ask the-observer-id the-command actual-args2)]
-      add-relationship the-task entity1 ent1args entity2 ent2args
+      add-relationship the-task entity1 ent1args entity2 ent2args ent1argstring ent2argstring
     ]
   ]
 end
@@ -334,11 +339,12 @@ to-report get-model [the-entity]
 end
 
 to-report entity [entity-name]
+  show entity-name
   report table:get tasks entity-name
 end
 
-to add-relationship [atask entity1-name arg1 entity2-name arg2]
-  table:put relationships relationship-counter (list atask entity1-name arg1 entity2-name arg2)
+to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string]
+  table:put relationships relationship-counter (list atask entity1-name arg1 arg1string entity2-name arg2 arg2string)
   set relationship-counter relationship-counter + 1
 end
 
@@ -350,14 +356,163 @@ to-report all-agent-entities
   report filter [table:get last ? "type" = "agentset" or table:get last ? "type" = "observer"] table:to-list tasks 
 end
 
+to-report all-observers
+  report filter [table:get last ? "type" = "observer"] table:to-list tasks 
+end
+
+to-report model-entities [model-id]
+  report filter [table:get last ? "model" = model-id] table:to-list tasks 
+end
+
+;; I think arguments are always any reporter, right?
+to-report  get-eligible-arguments [entity-name]
+  report filter [table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ] table:to-list tasks 
+end
+
+to-report agent-names
+  report map [first ?] all-agent-entities
+end
 
 
+to create-relationship
+
+end
 
 
+to-report get-args [name-of-entity]
+  let entity-table entity name-of-entity
+  report table:get entity-table "args"
+end
+
+to gui-create-relationship
+  ;; first find out who's doing something
+  let acting-entity user-one-of "Who does something?" agent-names
+  let acting-entity-args get-args acting-entity 
+  ;; deal with args here. If there are any, get them from the user, if not, don't do anything
+  let acting-entity-actuals []
+  if length acting-entity-args > 0[
+    set acting-entity-actuals get-actuals acting-entity
+  ]
+  let the-command user-one-of (word "What does " acting-entity " do?") get-eligible-interactions acting-entity
+  show (word "the command: " the-command)
+  let command-args get-args the-command
+  let command-actuals []
+  if length command-args > 0 [
+    set command-actuals get-actuals the-command
+  ]
+  ;; now we have everything, so create the relationship
+  ;; actually maybe check with user first
+  
+  if user-yes-or-no? (word "Ask " acting-entity " with " acting-entity-args " = " acting-entity-actuals " to do " the-command " with " command-args " = " command-actuals "? ") [
+    add-ls-interaction-between acting-entity acting-entity-actuals the-command command-actuals acting-entity-args command-args
+  ]
+end
+
+to-report get-actuals [the-entity ]
+  show the-entity
+  let entity-args get-args the-entity 
+  let entity-actuals []
+  foreach entity-args [
+    let entity-or-literal user-one-of (word "Do you want the value of " ? " to be an entity or a literal?") ["entity" "literal"]
+    if entity-or-literal  = "literal" [
+      ;; take it, turn it into a task, put it in actuals
+      let the-user-input user-input (word "Please write the value of " ? " here. Use quotation marks for strings.") 
+      show the-user-input 
+      set entity-actuals lput literal-to-task runresult the-user-input entity-actuals 
+    ]
+    if entity-or-literal = "entity" [
+      
+      show "eligb:"
+      show get-eligible-arguments the-entity 
+       
+      set entity-actuals lput entity-to-task first user-one-of (word "Which entity should be its argument?") get-eligible-arguments the-entity entity-actuals 
+    ]
+  ]
+  report entity-actuals
+end
+
+to gui-add-entity
+  let entity-model user-one-of "In which model do you want to create an entity?" map [first ? ] all-observers
+  let entity-type user-one-of "What kind of entity do you want to create?" ["agentset" "value" "command"]
+  let entity-name user-input "What do you want to call your entity?" 
+  let entity-string user-input "What should it do?"
+  let entity-args user-input "If it has any arguments, please write them here, separated by a space. Otherwise leave blank."
+  ifelse entity-args != "" [
+    set entity-args string:rex-split entity-args  " "
+  ]
+  [
+    set entity-args []
+  ]
+  let entity-otpl ""
+  ;; we need to resolve OTPL here. If it is an agentset, it is accessible to all observers, so that's just "O---"
+  if entity-type = "agentset"
+  [
+    set entity-otpl "O---"
+  ]
+  ;; I think we always call them 
+  set entity-otpl "O---"
+  
+  let model-id table:get (table:get tasks entity-model) "model"
+  add-entity entity-name new-entity model-id entity-string entity-args entity-type "OTPL"
+end
 
 
+to create-entity
+  
+end
+
+to update-output
+  clear-output
+  foreach table:keys tasks [
+    let the-entity entity ?
+  ]
+end
 
 
+to-report add-spaces [astring]
+  let sb []
+  foreach string:to-list astring [
+    ifelse ? = "[" or ? = "]"[
+      set sb lput (word " " ? " " ) sb
+    ]
+    [
+      set sb lput ? sb
+    ] 
+  ]
+  report string:from-list sb ""
+end
+
+
+to show-model-entities-of-type [amodel a-type]
+  clear-output
+  output-print (word "Model " amodel " has the following " a-type "s:\n")
+  foreach model-entities amodel [
+    if table:get last ? "type" = a-type [
+          output-print first ?
+
+    ]
+  ]
+end
+
+to show-relationships
+    clear-output
+    foreach table:keys relationships  [
+      output-print table:get relationships ?
+    ]
+end
+
+
+to run-task [entity-name actuals]
+  let the-entity entity entity-name
+  let the-task get-task the-entity
+  if (is-reporter-task? the-task)
+  [
+    show (runresult the-task actuals)
+  ]
+  if is-command-task? the-task [
+    (run the-task actuals)
+  ]
+end
 
 ;; Now for GUI plumbing
 
@@ -365,7 +520,9 @@ end
 ;; we always have access to models in ls:models, so no need to save that anywhere
 
 ;; we turn all models into agents:
-;; -- (oh, need to add turtles too)
+;; observer,
+;; breed sets,
+;; turtles, patches, and links
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -396,9 +553,9 @@ ticks
 
 OUTPUT
 674
-33
-923
-471
+91
+1232
+484
 12
 
 BUTTON
@@ -425,6 +582,95 @@ BUTTON
 56
 NIL
 simulate-eco-ls-system
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+12
+123
+140
+156
+Create an entity
+gui-add-entity
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+INPUTBOX
+677
+10
+832
+70
+a-model-id
+2
+1
+0
+Number
+
+BUTTON
+833
+55
+964
+88
+Show its entities
+show-model-entities-of-type a-model-id types
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+39
+240
+188
+273
+Create relationship
+gui-create-relationship
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+CHOOSER
+833
+10
+971
+55
+types
+types
+"observer" "agentset" "value"
+2
+
+BUTTON
+1028
+34
+1232
+67
+Show all active relationships
+show-relationships
 NIL
 1
 T
