@@ -1,5 +1,5 @@
-extensions [ls table string ]
-
+extensions [ls table string xw ]
+__includes [ "notebook.nls" ]
 
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
@@ -8,6 +8,8 @@ globals [
   relationship-counter
   wsp
   cc
+  
+  left-column-width
 ]
 
 
@@ -28,7 +30,124 @@ to setup
   ls:ask cc "import-world \"ls-gui-setup\""
   ls:show 1
   ls:show 2
+  
+  set left-column []
+  set left-column-width 400
+  set center-column []
+
+  set margin 10
+  setup-notebook
+  draw-model-selector
+  draw-relationship-builder
 end
+
+to draw-GUI
+  draw-model-selector
+    draw-relationship-builder
+end
+
+
+to draw-relationship-builder
+  xw:ask "lsgui" [
+    xw:create-button "new-relationship-button" [
+      xw:set-label "New Relationship"
+      xw:set-commands "gui-create-relationship"
+      xw:set-x (margin * 2) + left-column-width
+      xw:set-y margin
+      xw:set-width 250
+      set center-column fput "new-relationship-button"  center-column
+    ]
+    
+    xw:create-button "reset-gui-button" [
+      xw:set-label "Redraw Gui"
+      xw:set-commands "reset-gui"
+      xw:set-x (margin * 2) + (left-column-width * 2)
+      xw:set-y margin
+      xw:set-width 100
+      set center-column fput "reset-gui-button"  center-column
+    ]
+    
+  ]
+end
+
+  ;; this is a callback procedure, called by the 1st entity selector
+  ;; this populates the 2nd entity selector, based on what agent is selected as 'actor'
+to list-eligible-entities
+  ;; create a relationship widget here
+  ;; we need some code in here to deal with the number 
+end
+
+
+
+
+
+to draw-model-selector
+  xw:ask "lsgui" [
+    ;; create the models chooser
+    xw:create-chooser "Models" [
+      xw:set-label "Models" 
+      xw:set-items map [first ?] all-observers  
+      xw:set-width left-column-width
+      xw:set-x margin
+      xw:set-y margin
+      set left-column lput "Models"  left-column 
+    ]
+
+    
+    xw:create-chooser "data-types" [
+      xw:set-label "Show this model's entities of type: " 
+      xw:set-items ["observer" "agentset" "value" "reporter" "command"] 
+      xw:set-x margin
+      xw:set-width left-column-width
+      ;; only find the height of them all except the last because that is itself
+      xw:set-y margin + sum map [[xw:height] xw:of ?] butlast xw:widgets
+      set left-column lput "data-types"  left-column 
+      ]
+    
+    xw:create-button "Show" [
+      xw:set-commands "show-it"
+      xw:set-label "Inspect model"
+      xw:set-width left-column-width
+      xw:set-x margin
+      xw:set-y margin + sum map [[xw:height] xw:of ?] butlast xw:widgets
+      set left-column lput "Show"  left-column 
+    ]
+  ]
+  
+end
+
+to show-it 
+  ;; first remove everythign in left column except the three main buttons
+  clear-left
+  let the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" xw:get "data-types"
+  foreach the-entities [add-entity-to-col ? left-column]
+end
+
+
+to add-entity-to-col [an-entity a-column]
+  let the-name first an-entity
+  let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
+  
+  ;; create a note that has its name
+  xw:create-procedure-widget the-name [
+    xw:set-code (word to-string an-entity ": " get-args the-entity)
+    xw:set-name the-name
+    xw:set-x margin
+    xw:set-width left-column-width
+    xw:set-y margin + sum map [[xw:height] xw:of ?] a-column
+    set left-column lput the-name a-column
+  ]
+;  ;; create a textinput for args
+  ;; create a body, if it has one
+  
+end
+
+to-report to-string [an-entity]
+  report table:get last an-entity "to-string" 
+end
+
+
+
 
 to go
   run-relationships
@@ -69,12 +188,12 @@ end
 
 
 to-report new-entity [model task-string args the-type permitted-contexts]
-  if length args > 0 [
-    set task-string (make-variadic-task task-string args)
-  ]
   let task-table table:make
   table:put task-table "model" model
   table:put task-table "to-string" task-string
+  if length args > 0 [
+    set task-string (make-variadic-task task-string args)
+  ]
   table:put task-table "args" args
   table:put task-table "type" the-type
   table:put task-table "contexts" permitted-contexts
@@ -152,7 +271,7 @@ end
 
 to load-and-setup-model [model-path]
   let the-model 0
-  (ls:load-gui-model model-path [set the-model ?])
+  (ls:load-headless-model model-path [set the-model ?])
   ;; add the observer of the model
   add-observer the-model
   ;; add all a models procedures
@@ -172,6 +291,7 @@ to add-observer [the-model]
   let the-type "observer"
   ;; observers are different so we just manually create them here 
   let observer-entity table:make
+  table:put observer-entity "to-string" name
   table:put observer-entity "model" the-model
   table:put observer-entity "type" the-type
   table:put observer-entity "args" []
@@ -349,6 +469,13 @@ to-report model-entities [model-id]
   report filter [table:get last ? "model" = model-id] table:to-list tasks 
 end
 
+
+to-report get-from-model-all-types [model-id a-type]
+  report filter [table:get last ? "type" = a-type  and table:get last ? "model" = model-id ] table:to-list tasks
+;  report filter [table:get last ? "model" = model-id and table:get last ? "type" = a-type] table:to-list tasks
+end
+
+
 ;; I think arguments are always any reporter, right?
 ;; Turns out, no: eligible arguments are:
 ;;; for agentsets: 
@@ -363,7 +490,8 @@ to-report  get-eligible-arguments [entity-name]
   if the-entity-type = "agentset"[
     report filter [ 
       ;;;;; their own values (as entities)
-     table:get last ? "type" = "reporter" and member? "T" table:get last ? "contexts" and table:get last ? "model" = table:get entity entity-name "model"
+     table:get last ? "type" = "reporter" and member? "T" table:get last ? "contexts" and table:get last ? "model" = table:get entity entity-name "model" 
+     
     ] table:to-list tasks
   ]
   if the-entity-type = "observer"[
@@ -514,8 +642,7 @@ to show-model-entities-of-type [amodel a-type]
   output-print (word "Model " amodel " has the following " a-type "s:\n")
   foreach model-entities amodel [
     if table:get last ? "type" = a-type [
-          output-print first ?
-
+          output-print (word first ? ", arguments: " table:get last ? "args")
     ]
   ]
 end
@@ -557,14 +684,40 @@ to test-a-var [avar]
   
 end
 
+to reset-gui
+  foreach xw:widgets [xw:remove ?]
+  set center-column []
+  set left-column []
+  draw-gui
+end
+
+to clear-gui
+  clear-left
+  clear-center
+end
+
+to clear-center
+  foreach (sublist center-column 1 length center-column)[
+    xw:remove ?
+    set center-column remove ? center-column
+  ]
+end
+
+to clear-left
+  foreach (sublist left-column 3 length left-column ) [
+    set left-column remove ? left-column
+    xw:remove ?
+    ]
+;  set left-column sublist left-column 0 2
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-649
-470
-16
-16
+455
+236
+7
+7
 13.0
 1
 10
@@ -575,10 +728,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-7
+7
+-7
+7
 0
 0
 1
@@ -644,22 +797,22 @@ NIL
 1
 
 INPUTBOX
-677
+675
 10
-832
+830
 70
 a-model-id
-2
+1
 1
 0
 Number
 
 BUTTON
-833
-55
-964
-88
-Show its entities
+980
+10
+1095
+43
+Show them
 show-model-entities-of-type a-model-id types
 NIL
 1
@@ -689,14 +842,14 @@ NIL
 1
 
 CHOOSER
-833
+830
 10
-971
+968
 55
 types
 types
 "observer" "agentset" "value" "reporter" "command"
-4
+1
 
 BUTTON
 1028
@@ -1049,7 +1202,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.2-RC3
+NetLogo 5.2.0-RC4
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -1067,5 +1220,5 @@ Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 
 @#$#@#$#@
-0
+1
 @#$#@#$#@

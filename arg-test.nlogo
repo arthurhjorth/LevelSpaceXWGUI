@@ -1,6 +1,6 @@
 
 
-to-report test2 [avar9 s]
+to-report a-procedure-with-vars [var-name-1 var-name-2]
   let avar4 "test"
   report avar4
 end
