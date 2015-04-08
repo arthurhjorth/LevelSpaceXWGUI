@@ -10,6 +10,9 @@ globals [
   cc
   
   left-column-width
+  
+  
+  entity-serial
 ]
 
 
@@ -37,12 +40,12 @@ to setup
 
   set margin 10
   setup-notebook
-  draw-model-selector
+  draw-entity-lister
   draw-relationship-builder
 end
 
 to draw-GUI
-  draw-model-selector
+  draw-entity-lister
     draw-relationship-builder
 end
 
@@ -81,18 +84,17 @@ end
 
 
 
-to draw-model-selector
+to draw-entity-lister
   xw:ask "lsgui" [
     ;; create the models chooser
     xw:create-chooser "Models" [
       xw:set-label "Models" 
-      xw:set-items map [first ?] all-observers  
+      xw:set-items map [name-of entity-from-id ?] map [first ?] all-observers  
       xw:set-width left-column-width
       xw:set-x margin
       xw:set-y margin
       set left-column lput "Models"  left-column 
     ]
-
     
     xw:create-chooser "data-types" [
       xw:set-label "Show this model's entities of type: " 
@@ -120,26 +122,41 @@ to show-it
   ;; first remove everythign in left column except the three main buttons
   clear-left
   let the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" xw:get "data-types"
+  show the-entities
   foreach the-entities [add-entity-to-col ? left-column]
+
+  xw:create-procedure-widget "new thing" [
+    xw:set-name "New thing"
+    xw:set-x margin
+    xw:set-height 110
+    xw:set-width left-column-width
+    xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
+    set left-column lput "new thing" left-column
+    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"")    
+  ]
+
 end
 
 
 to add-entity-to-col [an-entity a-column]
-  let the-name first an-entity
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
+  let the-name name-of the-entity
+  let entity-id first an-entity
   
-  ;; create a note that has its name
-  xw:create-procedure-widget the-name [
-    xw:set-code (word to-string an-entity ": " get-args the-entity)
+  ;; create a widget for it that has its name
+  xw:create-procedure-widget name-of entity-from-id entity-id [
+    xw:set-code to-string an-entity 
     xw:set-name the-name
     xw:set-x margin
+    xw:set-height 110
     xw:set-width left-column-width
+    xw:set-args string:from-list get-args the-entity " "
     xw:set-y margin + sum map [[xw:height] xw:of ?] a-column
     set left-column lput the-name a-column
+    xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id)
   ]
 ;  ;; create a textinput for args
   ;; create a body, if it has one
-  
 end
 
 to-report to-string [an-entity]
@@ -154,7 +171,7 @@ to go
 end
 
 to test
-  add-entity "1-sheep-energy" new-entity 1  "sheep with [ an-expression ]" ["an-expression"] "agentset" "-T--"
+;  add-entity "1-sheep-energy" new-entity 1  "sheep with [ an-expression ]" ["an-expression"] "agentset" "-T--"
 end
 
 to simulate-eco-ls-system
@@ -171,6 +188,8 @@ to run-relationships
 end
 
 to-report make-variadic-task [astring args]
+  ;; first turn args into a list, so we can compare full words. (If it's a string, 'test' is a member of 'test2')
+  show (list astring  args)
   let arg-no 0
   let sb []
   ;; add spaces so that we can test for hard brackets
@@ -183,12 +202,14 @@ to-report make-variadic-task [astring args]
       set sb lput ? sb      
     ]  
   ]
+;  print sb
   report string:from-list sb " "
 end
 
 
-to-report new-entity [model task-string args the-type permitted-contexts]
-  let task-table table:make
+to-report new-entity [name model task-string args the-type permitted-contexts]  
+  let task-table table:make  
+  table:put task-table "name" name
   table:put task-table "model" model
   table:put task-table "to-string" task-string
   if length args > 0 [
@@ -295,7 +316,8 @@ to add-observer [the-model]
   table:put observer-entity "model" the-model
   table:put observer-entity "type" the-type
   table:put observer-entity "args" []
-  table:put tasks name observer-entity
+  table:put observer-entity "name" name
+  add-entity observer-entity
   
 end
 
@@ -307,8 +329,8 @@ to add-model-procedures [the-model]
     let args-string ""
     ;; procedures always have postfix argument, so this is easy: 
     repeat length args [set args-string (word args-string " ?")]
-    let task-string string:lower-case  (word procedure-name args-string)
-    add-entity (word the-model "-" procedure-name) new-entity the-model task-string args the-type item 2 ?
+    let task-string string:lower-case  (word procedure-name  args-string)
+    add-entity new-entity (word the-model "-" procedure-name) the-model task-string args the-type item 2 ?
   ]
 end
 
@@ -320,7 +342,7 @@ to add-model-globals [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "value"
-    add-entity (word the-model "-" global-name) new-entity the-model global-name args the-type "OTLP"
+    add-entity new-entity (word the-model "-" global-name) the-model global-name args the-type "OTLP"
   ]
 end
 
@@ -332,18 +354,18 @@ to add-model-breeds [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    add-entity (word the-model "-" agents) new-entity the-model agents args the-type "OTLP"
+    add-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
     
   ]
   ;; finally add patches, links, and turtles 
-  foreach (list "turtles" "patches" "links")[  
+  foreach (list "patches" "links")[  
     let agents ?
     let args []
     ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    add-entity (word the-model "-" agents) new-entity the-model agents args the-type "OTLP"
+    add-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
     
   ]  
 end
@@ -444,8 +466,10 @@ to-report get-model [the-entity]
   report table:get the-entity "model"
 end
 
+;; test this and see
 to-report entity [entity-name]
-  report table:get tasks entity-name
+  report last last filter [table:get last ? "name" = entity-name] table:to-list tasks   
+;  report table:get tasks entity-name
 end
 
 to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string]
@@ -453,8 +477,9 @@ to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2st
   set relationship-counter relationship-counter + 1
 end
 
-to add-entity [name atask-table]
-  table:put tasks name atask-table
+to add-entity [atask-table]
+  table:put tasks entity-serial atask-table
+  set entity-serial entity-serial + 1
 end
 
 to-report all-agent-entities
@@ -472,7 +497,6 @@ end
 
 to-report get-from-model-all-types [model-id a-type]
   report filter [table:get last ? "type" = a-type  and table:get last ? "model" = model-id ] table:to-list tasks
-;  report filter [table:get last ? "model" = model-id and table:get last ? "type" = a-type] table:to-list tasks
 end
 
 
@@ -504,7 +528,6 @@ to-report agent-names
   report map [first ?] all-agent-entities
 end
 
-
 ;; I'm not sure how (or even if) this deals with patches and links. Only turtles so far
 to add-model-breed-vars  [a-model]
   foreach ls:_list-breeds a-model [
@@ -517,24 +540,15 @@ to add-model-breed-vars  [a-model]
 ;      let the-task task [runresult ?]
       let the-string ?
       let args []
-      add-entity entity-name new-entity a-model the-string args entity-type entity-otpl
-;      add-entity entity-name new-entity model-id entity-string entity-args entity-type "OTPL"
-      
+      add-entity new-entity entity-name a-model the-string args entity-type entity-otpl
     ]
   ]
 end
 
-
 to-report get-args [an-entity]
+  print an-entity
   report table:get an-entity "args"
 end
-
-
-
-
-
-
-
 
 to gui-create-relationship
   ;; first find out who's doing something
@@ -610,7 +624,7 @@ to gui-add-entity
   set entity-otpl "O---"
   
   let model-id table:get (table:get tasks entity-model) "model"
-  add-entity entity-name new-entity model-id entity-string entity-args entity-type "OTPL"
+  add-entity new-entity entity-name model-id entity-string entity-args entity-type "OTPL"
 end
 
 
@@ -708,7 +722,80 @@ to clear-left
     set left-column remove ? left-column
     xw:remove ?
     ]
-;  set left-column sublist left-column 0 2
+end
+
+to-report get-by-serial
+
+end
+
+
+to save-entity-from-widget [a-widget-name entity-id]
+  let the-name [xw:name] xw:of a-widget-name
+  show (word "saving " the-name " " entity-id)
+  ;; first we check if it already exists
+  ;; if it doesn't, we just add a new one
+  ifelse entity-id = "new"[
+    new-entity-from-widget a-widget-name 
+  ]
+  [
+
+    ;; then find out what has changed.
+    ;; if it is the type, then go through all the relationships it is currently in and see
+    ;; if the new type makes them incompatible. If it does, handle that.
+    ;; If not, just save it.
+    ;; if it is the name or number of arguments, then ... what? not sure.
+    ;; if the code has changed, then check it, and if it compiles, save it.
+    ;; If it doesn't compile, then give an error.
+    ;; if the number of arguments have changed
+    show "this exists"
+  ]
+ 
+
+end
+
+to new-entity-from-widget [a-widget-name]
+  let model-id 1 ;; @TODO get the model id from the model selector
+  let name [xw:name] xw:of a-widget-name
+  let code [xw:code] xw:of a-widget-name
+  ;; turn args into a list of args, not just one long string
+  let args-string [xw:args] xw:of a-widget-name
+  let args-list string:rex-split args-string " " 
+  ;;  let the-type [xw:type] xw:of a-widget-name ;; @TODO this won't work just yet
+  let the-type "agentset"
+  let the-entity 0
+  carefully [
+    print (list name model-id code args-list the-type "OTPL")
+    set the-entity new-entity name model-id code args-list the-type "OTPL"
+  ]
+  [
+    show (word code " did not compile correctly")
+  ]
+  add-entity the-entity
+end
+
+to-report entity-from-id [an-id]
+  report table:get tasks an-id
+end
+
+to-report name-of [a-table]
+  report table:get a-table "name"
+end
+
+to delete-entity-by-id [an-id]
+  table:remove tasks an-id
+end
+
+to gui-delete-by-id [  ]
+  
+end
+
+to check-code
+  carefully [
+   let atask ls:report 1 "sheep" 
+  ]
+  [
+    show "did not work"
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -849,7 +936,7 @@ CHOOSER
 types
 types
 "observer" "agentset" "value" "reporter" "command"
-1
+2
 
 BUTTON
 1028
@@ -1202,7 +1289,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.2.0-RC4
+NetLogo 5.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
