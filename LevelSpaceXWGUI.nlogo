@@ -13,8 +13,8 @@ globals [
   
   
   entity-serial
+  relationship-serial
 ]
-
 
 to setup    
   ca
@@ -22,17 +22,17 @@ to setup
   set tasks table:make
   set relationships table:make
   set relationship-counter 0
-  load-and-setup-model "arg-test.nlogo"
+;  load-and-setup-model "arg-test.nlogo"
   load-and-setup-model "Wolf Sheep Predation.nlogo" 
   load-and-setup-model "Climate Change.nlogo"
-  set wsp 1
-  set cc 2
-  ls:close 0
+  set wsp 0
+  set cc 1
+;  close-and-remove 0
   ls:ask wsp "set grass? true"
   ls:ask wsp "setup"
   ls:ask cc "import-world \"ls-gui-setup\""
+  ls:show 0
   ls:show 1
-  ls:show 2
   
   set left-column []
   set left-column-width 400
@@ -40,41 +40,171 @@ to setup
 
   set margin 10
   setup-notebook
-  draw-entity-lister
-  draw-relationship-builder
+  reset-gui
 end
 
 to draw-GUI
   draw-entity-lister
+    draw-aux-buttons
     draw-relationship-builder
+
+end
+
+to draw-aux-buttons
+  
+  xw:ask "lsgui" [
+    xw:create-button "reset-gui-button" [
+      xw:set-label "Redraw Gui"
+      xw:set-commands "reset-gui"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin
+      xw:set-width 200
+;      set center-column fput "reset-gui-button"  center-column
+    ]   
+    xw:create-button "update-agents" [
+      xw:set-label "Update agents"
+      xw:set-commands "update-agents-in-gui"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 50
+      xw:set-width 200
+;      set center-column fput "update-agents"  center-column
+    ]
+    xw:create-button "update-commands" [
+      xw:set-label "Update commands"
+      xw:set-commands "foreach center-column [update-commands-in-gui ?]"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 100
+      xw:set-width 200
+;      set center-column fput "update-commands"  center-column
+    ]
+    xw:create-button "update-command-args" [
+      xw:set-label "Update command args"
+      xw:set-commands "foreach center-column [update-command-args ? ]"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 150
+      xw:set-width 200
+    ]
+
+    xw:create-button "load-new-model" [
+      xw:set-label "Load new model"
+      xw:set-commands "load-and-setup-model user-file"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 200
+      xw:set-width 200
+    ]
+
+  ]
 end
 
 
 to draw-relationship-builder
-  xw:ask "lsgui" [
-    xw:create-button "new-relationship-button" [
-      xw:set-label "New Relationship"
-      xw:set-commands "gui-create-relationship"
-      xw:set-x (margin * 2) + left-column-width
+  xw:ask "lsgui" 
+  [
+    xw:create-relationship "new-rel" 
+    [
       xw:set-y margin
-      xw:set-width 250
-      set center-column fput "new-relationship-button"  center-column
+      xw:set-width left-column-width
+      xw:set-x margin * 2 + left-column-width
+      xw:set-height 150
+      xw:set-save-command "save-relationship-from-gui reset-gui"
+      xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+      xw:set-available-procedures []
+      set center-column fput "new-rel" center-column    
+    ]    
+    
+    foreach table:to-list relationships [
+      let the-entity last ?
+      show the-entity
+      let widget-name first (word first ?)
+      xw:create-relationship widget-name [
+        xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
+        xw:set-width left-column-width
+        set center-column fput (word first ?) center-column            
+        xw:set-x margin * 2 + left-column-width
+        xw:set-height 150
+        xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+        xw:set-selected-agent-reporter table:get the-entity "agent-name"
+        xw:set-available-procedures map [name-of entity-from-id ?] get-eligible-interactions entity table:get the-entity "agent-name"
+        xw:set-selected-procedure table:get the-entity "command-name"
+        update-command-args widget-name 
+        xw:set-selected-procedure-arguments table:get the-entity  "command-arg-names"
+        xw:set-delete-command (word "delete-relationship " widget-name)
+        
+      ]
     ]
     
-    xw:create-button "reset-gui-button" [
-      xw:set-label "Redraw Gui"
-      xw:set-commands "reset-gui"
-      xw:set-x (margin * 2) + (left-column-width * 2)
-      xw:set-y margin
-      xw:set-width 100
-      set center-column fput "reset-gui-button"  center-column
-    ]
     
   ]
 end
 
+to update-chosen-command-args [a-relationship-widget]
+  xw:ask a-relationship-widget [
+;    table:get relationships "
+  ]
+  
+end
+
+
+to update-command-args [a-relationship-widget]
+  xw:ask a-relationship-widget [
+    let the-entity entity xw:selected-procedure
+    xw:set-available-procedure-arguments get-arg-tuples the-entity
+  ]
+end
+
+to-report get-arg-tuples [an-entity]
+    let the-args get-args an-entity
+    let outer []
+    foreach the-args[
+      let tuple (list ? map [table:get last ? "name"] get-eligible-arguments an-entity)
+      set outer fput tuple outer
+      xw:set-height xw:height + 20
+    ]
+    report outer
+  
+end
+
+
+to delete-relationship [a-widget]
+  table:remove relationships a-widget
+end
+
+;; (map list [1 2 3] [a b c])
+
+to save-relationship-from-gui
+  ;; We need seven things.
+  ;; The two entities, and the actuals for each of them - all from the widget.
+  ;; the task being called 
+  ;; the names of args, with get-args from the entities
+  let acting-entity-name [xw:selected-agent-reporter] xw:of "new-rel" 
+  let command-entity-name [xw:selected-procedure] xw:of "new-rel" 
+  let acting-entity entity [xw:selected-agent-reporter] xw:of "new-rel" 
+  let command-entity entity [xw:selected-procedure] xw:of "new-rel" 
+  let acting-args get-args acting-entity
+  let command-args [xw:selected-procedure-arguments] xw:of "new-rel"
+  let acting-actuals []
+  let command-actuals map [get-task entity last ?] [xw:selected-procedure-arguments ] xw:of "new-rel"
+  ;; Why do I thik we need seven? I think we just need six. Is the 7th for gui stuff?
+  
+;  show (list acting-entity command-entity acting-args command-args)
+  add-ls-interaction-between acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args
+end
+
+;; call this when available-agent-reporters changes.
+to update-commands-in-gui [a-relationship-widget]
+  xw:ask a-relationship-widget [
+    xw:set-available-procedures map [name-of entity-from-id ? ] get-eligible-interactions entity xw:selected-agent-reporter
+  ]
+end
+
+to update-agents-in-gui
+  xw:ask "new-rel"[
+    xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+  ]
+end
   ;; this is a callback procedure, called by the 1st entity selector
   ;; this populates the 2nd entity selector, based on what agent is selected as 'actor'
+  
 to list-eligible-entities
   ;; create a relationship widget here
   ;; we need some code in here to deal with the number 
@@ -122,23 +252,37 @@ to show-it
   ;; first remove everythign in left column except the three main buttons
   clear-left
   let the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" xw:get "data-types"
-  show the-entities
-  foreach the-entities [add-entity-to-col ? left-column]
+;  show the-entities
+  foreach the-entities [add-entity-to-col ?]
 
   xw:create-procedure-widget "new thing" [
     xw:set-name "New thing"
     xw:set-x margin
-    xw:set-height 110
+    xw:set-height 150
     xw:set-width left-column-width
     xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
     set left-column lput "new thing" left-column
-    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"")    
+    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"  show-it")  
+
   ]
 
 end
 
 
-to add-entity-to-col [an-entity a-column]
+to add-relationship-to-col [a-relationship]
+  
+  xw:create-relationship "new-rel" [
+    xw:set-y margin
+    xw:set-width left-column-width
+    xw:set-x margin * 2 + left-column-width
+    xw:set-height 100
+    
+    xw:set-available-agent-reporters ["observer" "turtles" "patches"]
+    xw:set-available-procedures []
+  ]
+end
+
+to add-entity-to-col [an-entity ]
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
   let the-name name-of the-entity
   let entity-id first an-entity
@@ -148,15 +292,19 @@ to add-entity-to-col [an-entity a-column]
     xw:set-code to-string an-entity 
     xw:set-name the-name
     xw:set-x margin
-    xw:set-height 110
+    xw:set-height 150
     xw:set-width left-column-width
     xw:set-args string:from-list get-args the-entity " "
-    xw:set-y margin + sum map [[xw:height] xw:of ?] a-column
-    set left-column lput the-name a-column
-    xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id)
+    xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
+    set left-column lput the-name left-column
+    xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
+        xw:set-delete-command (word "delete-entity " entity-id)
   ]
-;  ;; create a textinput for args
-  ;; create a body, if it has one
+end
+
+to delete-entity [entity-id]
+  table:remove tasks entity-id
+  show-it
 end
 
 to-report to-string [an-entity]
@@ -183,13 +331,13 @@ end
 
 to run-relationships
   foreach table:to-list relationships [
-    run first last ?
+    run table:get last ? "task"
   ]
 end
 
 to-report make-variadic-task [astring args]
   ;; first turn args into a list, so we can compare full words. (If it's a string, 'test' is a member of 'test2')
-  show (list astring  args)
+;  show (list astring  args)
   let arg-no 0
   let sb []
   ;; add spaces so that we can test for hard brackets
@@ -218,7 +366,7 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   table:put task-table "args" args
   table:put task-table "type" the-type
   table:put task-table "contexts" permitted-contexts
-  let task-from-model ls:report model (word "task [ " task-string " ]")  
+  let task-from-model ls:report model (word "task [ " task-string " ]") 
   ;; in terms of knowing how to compile the tasks, we need to know two things:
   ;; first, is it a command or a reporter - this is in the 'the-type' variable
   ;; second, is it runnable from the Observer context. 
@@ -273,9 +421,9 @@ to-report get-eligible-interactions [an-entity]
         table:get last ? "model" = table:get an-entity "model"
         )
       or
-      table:get last ? "type" = "command" and 
+      (table:get last ? "type" = "command" and 
       member? "O" table:get last ? "contexts"  and     
-      table:get last ? "model" != table:get an-entity "model"
+      table:get last ? "model" != table:get an-entity "model")
     ] 
     table:to-list tasks 
   ]
@@ -292,7 +440,7 @@ end
 
 to load-and-setup-model [model-path]
   let the-model 0
-  (ls:load-headless-model model-path [set the-model ?])
+  (ls:load-gui-model model-path [set the-model ?])
   ;; add the observer of the model
   add-observer the-model
   ;; add all a models procedures
@@ -378,7 +526,7 @@ to-report tasks-with [afilter]
 end
 
 ;; args are a list of tasks ONLY
-to add-ls-interaction-between  [entity1 ent1args entity2 ent2args ent1argstring ent2argstring]
+to add-ls-interaction-between  [entity1 ent1args entity2 ent2args ent1argstring ent2argstring] ;; string versions are for the gui - they are the names of args, not actuals
   let first-entity entity entity1 
   let second-entity entity entity2
   let first-entity-type table:get first-entity "type"
@@ -418,7 +566,7 @@ end
 ;; this needs to be rewritten so that it takes an entity and a literal, and then figures out how to turn
 ;; the literal into a task that takes into account the entity
 to-report literal-to-task [an-entity a-literal]
-  show (list an-entity a-literal)
+;  show (list an-entity a-literal)
   let the-type type-of an-entity
   if the-type = "agentset"[
     let the-task ls:report table:get an-entity "model" (word "task [ "  a-literal " ]")
@@ -468,12 +616,20 @@ end
 
 ;; test this and see
 to-report entity [entity-name]
+;  show entity-name
   report last last filter [table:get last ? "name" = entity-name] table:to-list tasks   
-;  report table:get tasks entity-name
 end
 
 to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string]
-  table:put relationships relationship-counter (list atask entity1-name arg1 arg1string entity2-name arg2 arg2string)
+  let relationship-table table:make
+  table:put relationship-table "agent-name" entity1-name
+  table:put relationship-table "command-name" entity2-name
+  table:put relationship-table "agent-actuals" arg1
+  table:put relationship-table "command-actuals" arg2
+  table:put relationship-table "command-arg-names" arg1string
+  table:put relationship-table "agent-arg-names" arg2string
+  table:put relationship-table "task" atask  
+  table:put relationships relationship-counter relationship-table
   set relationship-counter relationship-counter + 1
 end
 
@@ -509,12 +665,14 @@ end
 ;;;;;; all global entities
 ;;;;;; their own globals
 ;; 
-to-report  get-eligible-arguments [entity-name]
-  let the-entity-type type-of entity entity-name
+to-report  get-eligible-arguments [an-entity]
+  let the-entity-type type-of an-entity
   if the-entity-type = "agentset"[
     report filter [ 
-      ;;;;; their own values (as entities)
-     table:get last ? "type" = "reporter" and member? "T" table:get last ? "contexts" and table:get last ? "model" = table:get entity entity-name "model" 
+      ;;;;; their own values (as entities) + globals
+     (table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ) and 
+     (member? "T" table:get last ? "contexts" or member? "O" table:get last ? "contexts" )
+       and table:get last ? "model" = table:get an-entity "model"
      
     ] table:to-list tasks
   ]
@@ -593,7 +751,6 @@ to-report get-actuals [entity-name caller-entity]
     if entity-or-literal = "entity" [
       let eligible-arguments map [first ?] get-eligible-arguments caller-entity
       let the-argument-name user-one-of "Which entity should be its argument?" eligible-arguments
-      show (word "name :" the-argument-name )
       let the-task get-task entity the-argument-name
       set entity-actuals lput the-task entity-actuals
 ;      set entity-actuals lput entity-to-task first user-one-of (word "Which entity should be its argument?") get-eligible-arguments the-entity entity-actuals 
@@ -684,7 +841,6 @@ to-report run-task [entity-name actuals]
     (run the-task actuals)
   ]
 end
-;; turtles, patches, and links
 
 
 to do-task [entity-name actuals]
@@ -731,46 +887,73 @@ end
 
 to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
-  show (word "saving " the-name " " entity-id)
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
+    show "it's new"
     new-entity-from-widget a-widget-name 
   ]
   [
-
-    ;; then find out what has changed.
-    ;; if it is the type, then go through all the relationships it is currently in and see
-    ;; if the new type makes them incompatible. If it does, handle that.
-    ;; If not, just save it.
-    ;; if it is the name or number of arguments, then ... what? not sure.
-    ;; if the code has changed, then check it, and if it compiles, save it.
-    ;; If it doesn't compile, then give an error.
-    ;; if the number of arguments have changed
     show "this exists"
+    existing-entity-from-widget a-widget-name entity-id
   ]
  
 
 end
 
-to new-entity-from-widget [a-widget-name]
-  let model-id 1 ;; @TODO get the model id from the model selector
+to existing-entity-from-widget [a-widget-name entity-id]
+  let model-id get-model entity xw:get "Models"
   let name [xw:name] xw:of a-widget-name
   let code [xw:code] xw:of a-widget-name
   ;; turn args into a list of args, not just one long string
-  let args-string [xw:args] xw:of a-widget-name
-  let args-list string:rex-split args-string " " 
-  ;;  let the-type [xw:type] xw:of a-widget-name ;; @TODO this won't work just yet
-  let the-type "agentset"
+  let args-string string:trim [xw:args] xw:of a-widget-name
+  let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
+  ;; @todo: we need a dropdown for this
+  
+  let the-type [xw:type] xw:of a-widget-name
+;  let the-type "agentset"
+  
+  
   let the-entity 0
+  let code-worked? true
   carefully [
-    print (list name model-id code args-list the-type "OTPL")
     set the-entity new-entity name model-id code args-list the-type "OTPL"
   ]
   [
+    set code-worked? false
+    show (word code " did not compile correctly")
+  ]  
+  if code-worked?
+  [
+    table:put tasks entity-id the-entity
+  ]
+end
+to new-entity-from-widget [a-widget-name]
+  let model-id get-model entity xw:get "Models"
+  let name [xw:name] xw:of a-widget-name
+  let code [xw:code] xw:of a-widget-name
+  ;; turn args into a list of args, not just one long string
+  let args-string string:trim [xw:args] xw:of a-widget-name
+  let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
+    let the-type [xw:type] xw:of a-widget-name ;; @TODO this won't work just yet
+
+;
+;  ;; @todo we need a dropdown for this
+
+;  let the-type "command"
+  let the-entity 0
+  let code-worked? true
+  carefully [
+    set the-entity new-entity name model-id code args-list the-type "OTPL"
+  ]
+  [
+    set code-worked? false
     show (word code " did not compile correctly")
   ]
-  add-entity the-entity
+  if code-worked?
+  [  
+    add-entity the-entity
+  ]
 end
 
 to-report entity-from-id [an-id]
@@ -789,13 +972,16 @@ to gui-delete-by-id [  ]
   
 end
 
-to check-code
-  carefully [
-   let atask ls:report 1 "sheep" 
+to-report all-model-entities [model-id]
+  report filter [table:get last ? "model" = model-id] table:to-list tasks 
+end
+
+to close-and-remove [model-id]
+  ls:close model-id
+  foreach map [first ?] all-model-entities model-id [
+    table:remove tasks ?
   ]
-  [
-    show "did not work"
-  ]
+  
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -939,10 +1125,10 @@ types
 2
 
 BUTTON
-1028
-34
-1232
-67
+980
+45
+1184
+78
 Show all active relationships
 show-relationships
 NIL
