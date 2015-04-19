@@ -8,10 +8,7 @@ globals [
   relationship-counter
   wsp
   cc
-  
   left-column-width
-  
-  
   entity-serial
   relationship-serial
 ]
@@ -22,12 +19,10 @@ to setup
   set tasks table:make
   set relationships table:make
   set relationship-counter 0
-;  load-and-setup-model "arg-test.nlogo"
   load-and-setup-model "Wolf Sheep Predation.nlogo" 
   load-and-setup-model "Climate Change.nlogo"
   set wsp 0
   set cc 1
-;  close-and-remove 0
   ls:ask wsp "set grass? true"
   ls:ask wsp "setup"
   ls:ask cc "import-world \"ls-gui-setup\""
@@ -96,7 +91,6 @@ to draw-aux-buttons
   ]
 end
 
-
 to draw-relationship-builder
   xw:ask "lsgui" 
   [
@@ -110,7 +104,7 @@ to draw-relationship-builder
       xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
       xw:set-available-procedures []
       set center-column fput "new-rel" center-column    
-    ]    
+    ]
     
     foreach table:to-list relationships [
       let the-entity last ?
@@ -132,8 +126,6 @@ to draw-relationship-builder
         
       ]
     ]
-    
-    
   ]
 end
 
@@ -356,7 +348,7 @@ end
 
 
 to-report new-entity [name model task-string args the-type permitted-contexts]  
-  let task-table table:make  
+  let task-table table:make
   table:put task-table "name" name
   table:put task-table "model" model
   table:put task-table "to-string" task-string
@@ -928,6 +920,7 @@ to existing-entity-from-widget [a-widget-name entity-id]
     table:put tasks entity-id the-entity
   ]
 end
+
 to new-entity-from-widget [a-widget-name]
   let model-id get-model entity xw:get "Models"
   let name [xw:name] xw:of a-widget-name
