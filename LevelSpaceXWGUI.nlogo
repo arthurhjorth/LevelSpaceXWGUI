@@ -220,7 +220,7 @@ to draw-entity-lister
     
     xw:create-chooser "data-types" [
       xw:set-label "Show this model's entities of type: " 
-      xw:set-items ["observer" "agentset" "value" "reporter" "command"] 
+      xw:set-items ["Extended Agents" "Reporters" "Commands"] 
       xw:set-x margin
       xw:set-width left-column-width
       ;; only find the height of them all except the last because that is itself
@@ -243,7 +243,20 @@ end
 to show-it 
   ;; first remove everythign in left column except the three main buttons
   clear-left
-  let the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" xw:get "data-types"
+  ;; AH: This needs to change so that "Extended Agents", "Reporters", and "Commands" return the right things
+  ;  let the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" xw:get "data-types"
+  let the-entities []
+  if xw:get "data-types" = "Extended Agents"[ 
+    set the-entities sentence get-from-model-all-types  table:get entity xw:get "Models" "model" "observer" get-from-model-all-types  table:get entity xw:get "Models" "model" "agentset"
+    ]
+  if xw:get "data-types" = "Reporters"[ 
+    set the-entities sentence get-from-model-all-types  table:get entity xw:get "Models" "model" "value" get-from-model-all-types  table:get entity xw:get "Models" "model" "reporter"
+    ]
+
+  
+  
+  
+  
 ;  show the-entities
   foreach the-entities [add-entity-to-col ?]
 
@@ -342,7 +355,6 @@ to-report make-variadic-task [astring args]
       set sb lput ? sb      
     ]  
   ]
-;  print sb
   report string:from-list sb " "
 end
 
@@ -974,7 +986,6 @@ to close-and-remove [model-id]
   foreach map [first ?] all-model-entities model-id [
     table:remove tasks ?
   ]
-  
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
