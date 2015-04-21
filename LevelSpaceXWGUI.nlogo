@@ -18,6 +18,19 @@ to setup
   ls:reset
   set tasks table:make
   set relationships table:make
+  
+  ;; Adding a levelspace model
+  let the-type "observer"
+  ;; observers are different so we just manually create them here 
+  let observer-entity table:make
+  table:put observer-entity "to-string" "LevelSpace"
+  table:put observer-entity "model" "x"
+  table:put observer-entity "type" "observer"
+  table:put observer-entity "args" []
+  table:put observer-entity "name" "LevelSpace"
+  add-entity observer-entity
+  
+  
   set relationship-counter 0
   load-and-setup-model "Wolf Sheep Predation.nlogo" 
   load-and-setup-model "Climate Change.nlogo"
@@ -34,6 +47,9 @@ to setup
   set center-column []
 
   set margin 10
+
+  
+  
   setup-notebook
   reset-gui
 end
@@ -108,7 +124,7 @@ to draw-relationship-builder
     
     foreach table:to-list relationships [
       let the-entity last ?
-      show the-entity
+;      show the-entity
       let widget-name first (word first ?)
       xw:create-relationship widget-name [
         xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
@@ -252,6 +268,9 @@ to show-it
   if xw:get "data-types" = "Reporters"[ 
     set the-entities sentence get-from-model-all-types  table:get entity xw:get "Models" "model" "value" get-from-model-all-types  table:get entity xw:get "Models" "model" "reporter"
     ]
+  if xw:get "data-types" = "Commands"[ 
+    set the-entities get-from-model-all-types  table:get entity xw:get "Models" "model" "command"
+    ]
 
   
   
@@ -360,47 +379,56 @@ end
 
 
 to-report new-entity [name model task-string args the-type permitted-contexts]  
+;  print model
   let task-table table:make
   table:put task-table "name" name
   table:put task-table "model" model
   table:put task-table "to-string" task-string
-  if length args > 0 [
+  if length args > 0 
+  [
     set task-string (make-variadic-task task-string args)
   ]
   table:put task-table "args" args
   table:put task-table "type" the-type
   table:put task-table "contexts" permitted-contexts
-  let task-from-model ls:report model (word "task [ " task-string " ]") 
-  ;; in terms of knowing how to compile the tasks, we need to know two things:
-  ;; first, is it a command or a reporter - this is in the 'the-type' variable
-  ;; second, is it runnable from the Observer context. 
-  ;; Observer commands/reporters need to be compiled like this:
-  ;;;;; task [ls:report model task-string]    
-  ;; non-observer ones need to be compiled like thi:
-  ;;;;; ls:report model (word "task [ " task-string " ]")  
-;  show task-from-model task-string
-  
-  ifelse is-reporter-task? task-from-model
+  ;; special case tasks created in the LevelSpace/Metaverse or whatever stupid name Bryan insists on. <3 <3
+  ifelse model = "x"
   [
-    ;; observer reproters here
-    ifelse member? "O" permitted-contexts[
-      table:put task-table "to-task" task [(ls:report model task-string ?)]    
-    ]
-    ;; turtle reporters here
-    [
-      table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")  
-    ]
+    table:put task-table "to-task" task [ run-result task-string ]
   ]
-  ;; or it is a command task\
   [
-    ;; observer commands are command tasks that are compiled in the observer of the parent model,
-    ifelse member? "O" permitted-contexts[
-      table:put task-table "to-task" task [(ls:ask model task-string ?)]
-    ]
-    ;; turtle commands here:
+    let task-from-model ls:report model (word "task [ " task-string " ]") 
+    ;; in terms of knowing how to compile the tasks, we need to know two things:
+    ;; first, is it a command or a reporter - this is in the 'the-type' variable
+    ;; second, is it runnable from the Observer context. 
+    ;; Observer commands/reporters need to be compiled like this:
+    ;;;;; task [ls:report model task-string]    
+    ;; non-observer ones need to be compiled like thi:
+    ;;;;; ls:report model (word "task [ " task-string " ]")  
+    ;  show task-from-model task-string
+    
+    ifelse is-reporter-task? task-from-model
     [
-      ;; turtle commands are tasks that are compiled in the context of the child model's observer
-      table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")
+      ;; observer reproters here
+      ifelse member? "O" permitted-contexts[
+        table:put task-table "to-task" task [(ls:report model task-string ?)]    
+      ]
+      ;; turtle reporters here
+      [
+        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")  
+      ]
+    ]
+    ;; or it is a command task\
+    [
+      ;; observer commands are command tasks that are compiled in the observer of the parent model,
+      ifelse member? "O" permitted-contexts[
+        table:put task-table "to-task" task [(ls:ask model task-string ?)]
+      ]
+      ;; turtle commands here:
+      [
+        ;; turtle commands are tasks that are compiled in the context of the child model's observer
+        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")
+      ]
     ]
   ]
   report task-table
@@ -426,8 +454,8 @@ to-report get-eligible-interactions [an-entity]
         )
       or
       (table:get last ? "type" = "command" and 
-      member? "O" table:get last ? "contexts"  and     
-      table:get last ? "model" != table:get an-entity "model")
+        member? "O" table:get last ? "contexts"  and     
+        table:get last ? "model" != table:get an-entity "model")
     ] 
     table:to-list tasks 
   ]
@@ -437,7 +465,8 @@ to-report get-eligible-interactions [an-entity]
     ] 
     table:to-list tasks 
   ]  
-  report (list "poop")
+  user-message (word "Something went wrong getting interactions for " name-of an-entity)
+  ;  report 
 end
 
 
@@ -708,7 +737,7 @@ to add-model-breed-vars  [a-model]
 end
 
 to-report get-args [an-entity]
-  print an-entity
+;  print an-entity
   report table:get an-entity "args"
 end
 
@@ -914,8 +943,7 @@ to existing-entity-from-widget [a-widget-name entity-id]
   let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
   ;; @todo: we need a dropdown for this
   
-  let the-type [xw:type] xw:of a-widget-name
-;  let the-type "agentset"
+  let the-type current-type
   
   
   let the-entity 0
@@ -940,12 +968,7 @@ to new-entity-from-widget [a-widget-name]
   ;; turn args into a list of args, not just one long string
   let args-string string:trim [xw:args] xw:of a-widget-name
   let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
-    let the-type [xw:type] xw:of a-widget-name ;; @TODO this won't work just yet
-
-;
-;  ;; @todo we need a dropdown for this
-
-;  let the-type "command"
+  let the-type current-type
   let the-entity 0
   let code-worked? true
   carefully [
@@ -987,6 +1010,13 @@ to close-and-remove [model-id]
     table:remove tasks ?
   ]
 end
+
+to-report current-type
+  let widget-type xw:get "data-types"
+  if widget-type = "Extended Agents" [report "agentset"]
+  if widget-type = "Commands" [report "command"]
+  if widget-type = "Reporters" [report "reporter"]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -1014,13 +1044,6 @@ GRAPHICS-WINDOW
 1
 ticks
 30.0
-
-OUTPUT
-674
-91
-1232
-484
-12
 
 BUTTON
 58
@@ -1073,34 +1096,6 @@ NIL
 NIL
 1
 
-INPUTBOX
-675
-10
-830
-70
-a-model-id
-1
-1
-0
-Number
-
-BUTTON
-980
-10
-1095
-43
-Show them
-show-model-entities-of-type a-model-id types
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 BUTTON
 39
 240
@@ -1108,33 +1103,6 @@ BUTTON
 273
 Create relationship
 gui-create-relationship
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-CHOOSER
-830
-10
-968
-55
-types
-types
-"observer" "agentset" "value" "reporter" "command"
-2
-
-BUTTON
-980
-45
-1184
-78
-Show all active relationships
-show-relationships
 NIL
 1
 T
