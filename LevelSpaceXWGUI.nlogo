@@ -401,11 +401,19 @@ to add-entity-to-col [an-entity ]
   ]
 end
 
-to delete-entity [entity-id]
-  ;; first check if this entity is used in any relationships
-  ;; Okay. So, it looks like I need to rewrite how these are accessed or we won't be able to have 
-  
-  table:remove tasks entity-id
+to delete-entity [an-id]
+  ;; check if it is being used first
+  let entity-name name-of entity-from-id an-id
+  let no-of-relationships length relationships-with-entity-id (word an-id)
+  if user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
+  [
+    ;; delete relationships first 
+    foreach map [first ?] relationships-with-entity-id (word an-id)[
+      table:remove relationships ?
+      draw-relationship-builder
+    ]
+    table:remove tasks an-id
+  ]
   show-it
 end
 
@@ -763,6 +771,7 @@ end
 
 ;; test this and see
 to-report entity [entity-name]
+  show entity-name
   ;  show entity-name
   report last last filter [table:get last ? "name" = entity-name] table:to-list tasks   
 end
@@ -1104,16 +1113,11 @@ to-report is-task-right-type? [a-task]
 end
 
 to-report entity-from-id [an-id]
-;  show (word "trying to get "  an-id)
   report table:get tasks an-id
 end
 
 to-report name-of [a-table]
   report table:get a-table "name"
-end
-
-to delete-entity-by-id [an-id]
-  table:remove tasks an-id
 end
 
 to gui-delete-by-id [  ]
@@ -1143,6 +1147,13 @@ to run-relationship-by-id [id]
   run table:get the-relationship-table "task"
 end
 
+to-report entity-ids-in-relationships
+  report reduce sentence map [(sentence (list run-result table:get last ? "command-id" run-result table:get last ? "agent-id"))] table:to-list relationships 
+end
+
+to-report relationships-with-entity-id [an-id]
+  report filter [table:get last ? "agent-id" = an-id or table:get last ? "command-id" = an-id] table:to-list relationships
+end
 
 to-report arg-types [atask some-vars]
   
