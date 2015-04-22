@@ -12,10 +12,11 @@ globals [
   left-column-width
   entity-serial
   relationship-serial
+  setup-relationships-serial
   
 ]
 
-to setup    
+to setup
   ca
   ls:reset
   set tasks table:make
@@ -61,6 +62,7 @@ to draw-GUI
   draw-entity-lister
   draw-aux-buttons
   draw-relationship-builder
+  draw-center
 end
 
 to draw-aux-buttons
@@ -104,20 +106,37 @@ to draw-aux-buttons
   ]
 end
 
+;; AH: this isc alled at the wrong times.
 to draw-relationship-builder
-  ;; only clear it if there's something in there
-  if length center-column > 0 [clear-center]
-  show "draw rel builder"
+  
   xw:ask "lsgui" 
   [
+    xw:create-chooser "setup-or-go" [
+      xw:set-label "Show setup or go relationships: " 
+      xw:set-items ["Setup" "Go"] 
+      xw:set-x margin * 2 + left-column-width
+      xw:set-width left-column-width
+      ;; only find the height of them all except the last because that is itself
+        xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
+      set center-column fput "setup-or-go" center-column
+      
+    ]
+    xw:on-change "setup-or-go" [draw-center]
+
+
+  ]
+end
+
+to draw-center
+  clear-center
     xw:create-relationship "new-rel" 
     [
       xw:set-color blue
-      xw:set-y margin
+      xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       xw:set-width left-column-width
       xw:set-x margin * 2 + left-column-width
       xw:set-height 250
-      xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-relationship-builder"
+      xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-center"
       xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
       xw:set-available-procedures []
       xw:on-selected-agent-reporter-change [
@@ -132,20 +151,21 @@ to draw-relationship-builder
       xw:on-selected-procedure-change [
         update-command-args "new-rel"
         ]
-      set center-column fput "new-rel" center-column    
+      set center-column lput "new-rel" center-column    
     ]
-    ;; list existing relationships
-    foreach table:to-list relationships [
+    
+    
+    ;; list existing relationships; first find out if we're looking at startup or go relationships
+    let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
+    show the-relationships
+    foreach table:to-list the-relationships [
       let relationship-id first ?
-      show relationship-id
       let the-entity last ?
       let widget-name (word relationship-id)
-      show (word "relationship-id: " widget-name)
-      show is-string? widget-name
       xw:create-relationship widget-name [
         xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
         xw:set-width left-column-width
-        set center-column fput (word first ?) center-column            
+        set center-column lput (word first ?) center-column            
         xw:set-x margin * 2 + left-column-width
         xw:set-height 150
         xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
@@ -167,21 +187,17 @@ to draw-relationship-builder
 
         ]        
         let command-menu-name (word table:get the-entity "command-id" ":" table:get the-entity "command-name" )        
-        show command-menu-name
         xw:set-selected-procedure command-menu-name 
   
-        xw:set-delete-command (word "delete-relationship " widget-name " draw-relationship-builder")
+        xw:set-delete-command (word "delete-relationship " widget-name " draw-center")
         xw:set-run-command (word "run-relationship-by-id " relationship-id)
       ]
     ]
-  ]
 end
 
 
 ;; call this when available-agent-reporters changes.
 to update-commands-in-gui [a-relationship-widget]
-  show "updating commands in " 
-  show a-relationship-widget
   xw:ask a-relationship-widget [
     let chosen-agent-id first string:rex-split xw:selected-agent-reporter ":" 
 ;    show chosen-agent-id
@@ -204,7 +220,6 @@ end
 to update-command-args [a-relationship-widget]
   xw:ask a-relationship-widget [
     let the-entity-id runresult (first string:rex-split xw:selected-procedure ":")
-    show (word "getting command args for :" a-relationship-widget)
     xw:set-available-procedure-arguments get-arg-tuples the-entity-id
   ]
 end
@@ -271,18 +286,20 @@ to save-relationship-from-gui [a-widget]
   let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
   
   
-  add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args chosen-agent-id chosen-command-id
-
-;to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string ent1-id ent2-id]
+  let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args chosen-agent-id chosen-command-id
   
+  let relationship-type xw:get "setup-or-go"
+  let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
+  table:put the-table relationship-counter the-relationship
+  set relationship-counter relationship-counter + 1
 end
 
 
-to update-agents-in-gui
-  xw:ask "new-rel"[
-          xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
-  ]
-end
+;to update-agents-in-gui
+;  xw:ask "new-rel"[
+;          xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
+;  ]
+;end
 ;; this is a callback procedure, called by the 1st entity selector
 ;; this populates the 2nd entity selector, based on what agent is selected as 'actor'
 
@@ -317,21 +334,15 @@ to draw-entity-lister
       xw:set-y margin + sum map [[xw:height] xw:of ?] butlast xw:widgets
       set left-column lput "data-types"  left-column 
     ]
-    
-    xw:create-button "Show" [
-      xw:set-commands "show-it"
-      xw:set-label "Inspect model"
-      xw:set-width left-column-width
-      xw:set-x margin
-      xw:set-y margin + sum map [[xw:height] xw:of ?] butlast xw:widgets
-      set left-column lput "Show"  left-column 
-    ]
+
   ]
+  
+  xw:on-change "Models" [show-it]
+  xw:on-change "data-types" [show-it]
   
 end
 
 to show-it 
-  show "show it triggered"
   ;; first remove everythign in left column except the three main buttons
   clear-left
   let the-entities [] ;; this contains all the types of this widget
@@ -368,18 +379,6 @@ to show-it
 end
 
 
-;to add-relationship-to-col [a-relationship]
-;  
-;  xw:create-relationship "new-rel" [
-;    xw:set-y margin
-;    xw:set-width left-column-width
-;    xw:set-x margin * 2 + left-column-width
-;    xw:set-height 100
-;    
-;    xw:set-available-agent-reporters ["observer" "turtles" "patches"]
-;    xw:set-available-procedures []
-;  ]
-;end
 
 to add-entity-to-col [an-entity ]
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
@@ -410,7 +409,7 @@ to delete-entity [an-id]
     ;; delete relationships first 
     foreach map [first ?] relationships-with-entity-id (word an-id)[
       table:remove relationships ?
-      draw-relationship-builder
+      draw-center
     ]
     table:remove tasks an-id
   ]
@@ -771,12 +770,13 @@ end
 
 ;; test this and see
 to-report entity [entity-name]
-  show entity-name
   ;  show entity-name
   report last last filter [table:get last ? "name" = entity-name] table:to-list tasks   
 end
 
-to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string ent1-id ent2-id]
+
+;;AH: Turn this into a reporter, pass it back, and then decide back in the previous 
+to-report add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2string ent1-id ent2-id]
   let relationship-table table:make
   table:put relationship-table "agent-name" entity1-name
   table:put relationship-table "agent-id" ent1-id
@@ -786,9 +786,8 @@ to add-relationship [atask entity1-name arg1 entity2-name arg2 arg1string arg2st
   table:put relationship-table "command-actuals" arg2
   table:put relationship-table "command-arg-names" arg1string
   table:put relationship-table "agent-arg-names" arg2string
-  table:put relationship-table "task" atask  
-  table:put relationships relationship-counter relationship-table
-  set relationship-counter relationship-counter + 1
+  table:put relationship-table "task" atask
+  report relationship-table
 end
 
 to add-entity [atask-table]
@@ -1000,14 +999,14 @@ to clear-gui
 end
 
 to clear-center
-  foreach center-column [;(sublist center-column 1 length center-column)[
+  foreach butfirst center-column [
     xw:remove ?
     set center-column remove ? center-column
   ]
 end
 
 to clear-left
-  foreach (sublist left-column 3 length left-column ) [
+  foreach (sublist left-column 2 length left-column ) [
     set left-column remove ? left-column
     xw:remove ?
   ]
@@ -1023,11 +1022,9 @@ to save-entity-from-widget [a-widget-name entity-id]
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
-    show "it's new"
     new-entity-from-widget a-widget-name 
   ]
   [
-    show "this exists"
     existing-entity-from-widget a-widget-name entity-id
   ]
   
@@ -1052,7 +1049,6 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ]
   [
     set code-worked? false
-    show is-task-right-type? get-task the-entity
     show (word code " did not compile correctly")
   ]  
   if code-worked?
