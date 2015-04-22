@@ -374,7 +374,7 @@ to show-it
   ]
   
 ;   add entities to the gui
-  foreach the-entities [add-entity-to-col ?]
+  foreach reverse the-entities [add-entity-to-col ?]
   
 end
 
