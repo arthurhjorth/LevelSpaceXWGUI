@@ -5,7 +5,7 @@ to setup-notebook
 ;  set right-column table:make
 ;  set center-column table:make
   
-;  xw:clear-all
+  xw:clear-all
   set default-height 100
   set default-width 500
   set button-width 50
@@ -19,48 +19,48 @@ end
 
 
 
-to append-cell
-  let y-pos ifelse-value (not empty? cells) [
-    [xw:y + xw:height] xw:of last cells
-  ] [
-  0
-  ]
-  let id (length cells) / 2
-  let key (word "input " id)
-  xw:create-code-editor key [
-    xw:set-width default-width
-    xw:set-height default-height
-    xw:set-x button-width
-    xw:set-y y-pos
-  ]
-  let output-key (word "output " id)
-  xw:create-text-area output-key [
-    xw:set-width default-width
-    xw:set-height 0
-    xw:set-x button-width
-    xw:set-y [ xw:y + xw:height ] xw:of key
-  ]
-  xw:create-button (word "run " id) [
-    xw:set-label "Run"
-    xw:set-commands (word "set current-output \"" output-key "\" run-cell \"" id "\"")
-    xw:set-width button-width
-    xw:set-y y-pos
-  ]
-  set cells (sentence cells key output-key)
-end
+;to append-cell
+;  let y-pos ifelse-value (not empty? cells) [
+;    [xw:y + xw:height] xw:of last cells
+;  ] [
+;  0
+;  ]
+;  let id (length cells) / 2
+;  let key (word "input " id)
+;  xw:create-code-editor key [
+;    xw:set-width default-width
+;    xw:set-height default-height
+;    xw:set-x button-width
+;    xw:set-y y-pos
+;  ]
+;  let output-key (word "output " id)
+;  xw:create-text-area output-key [
+;    xw:set-width default-width
+;    xw:set-height 0
+;    xw:set-x button-width
+;    xw:set-y [ xw:y + xw:height ] xw:of key
+;  ]
+;  xw:create-button (word "run " id) [
+;    xw:set-label "Run"
+;    xw:set-commands (word "set current-output \"" output-key "\" run-cell \"" id "\"")
+;    xw:set-width button-width
+;    xw:set-y y-pos
+;  ]
+;  set cells (sentence cells key output-key)
+;end
 
-to run-cell [ id ]
-  let cell (word "input " id)
-  set current-output (word "output " id)
-  xw:ask current-output [
-    xw:set-text ""
-    resize-cell
-  ]
-  run [ xw:text ] xw:of cell
-  if current-output = last cells [
-    append-cell
-  ]
-end
+;to run-cell [ id ]
+;  let cell (word "input " id)
+;  set current-output (word "output " id)
+;  xw:ask current-output [
+;    xw:set-text ""
+;    resize-cell
+;  ]
+;  run [ xw:text ] xw:of cell
+;  if current-output = last cells [
+;    append-cell
+;  ]
+;end
 
 to echo [ val ]
   xw:ask current-output [
