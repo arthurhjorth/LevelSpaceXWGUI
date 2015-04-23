@@ -1175,6 +1175,70 @@ to run-relationships-once
         xw:set-color cyan]
   ]
 end
+
+to move-up [a-relationship-id ]
+  let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
+  let relationship-keys map [first ?] table:to-list the-relationships
+  ;; find out where in the list it is
+  let initial-position position a-relationship-id relationship-keys
+  ;; do something only if it's not already first
+  if initial-position > 0  [
+    ;; create three sublists. One containing everything before the two numbesr being swappe.d
+    let list1 sublist relationship-keys 0 (initial-position - 1)
+    ;; one containing the two numbers
+    let list2 sublist relationship-keys (initial-position - 1) (initial-position + 1)
+    set list2 reverse list2
+    ;; and one containing everything after them.
+    let list3 sublist relationship-keys (initial-position + 1) (length relationship-keys)
+    ;; and put them all togetehr again
+    let new-ordered-key reduce sentence (list list1 list2 list3)
+    ;; now construct a new table using these keys
+    let reordered table:make
+    foreach new-ordered-key [
+      let the-entry table:get the-relationships ?
+      table:put reordered ? the-entry
+    ]
+    ifelse xw:get "setup-or-go" = "Go"
+    [
+      set relationships reordered
+    ]
+    [
+      set setup-relationships reordered
+    ]
+  ]
+end
+
+to move-down [a-relationship-id]
+    let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
+  let relationship-keys map [first ?] table:to-list the-relationships
+  ;; find out where in the list it is
+  let initial-position position a-relationship-id relationship-keys
+  ;; do something only if it's not already first
+  if initial-position < (length relationship-keys + 1)  [
+    ;; create three sublists. One containing everything before the two numbesr being swappe.d
+    let list1 sublist relationship-keys 0 (initial-position)
+    ;; one containing the two numbers
+    let list2 sublist relationship-keys (initial-position) (initial-position + 2)
+    set list2 reverse list2
+    ;; and one containing everything after them.
+    let list3 sublist relationship-keys (initial-position + 1) (length relationship-keys)
+    ;; and put them all togetehr again
+    let new-ordered-key reduce sentence (list list1 list2 list3)
+    ;; now construct a new table using these keys
+    let reordered table:make
+    foreach new-ordered-key [
+      let the-entry table:get the-relationships ?
+      table:put reordered ? the-entry
+    ]
+    ifelse xw:get "setup-or-go" = "Go"
+    [
+      set relationships reordered
+    ]
+    [
+      set setup-relationships reordered
+    ]
+  ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
