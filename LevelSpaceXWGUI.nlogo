@@ -74,32 +74,33 @@ to draw-aux-buttons
       xw:set-y margin
       xw:set-width 200
     ]   
-    xw:create-button "update-agents" [
-      xw:set-label "Update agents"
-      xw:set-commands "update-agents-in-gui"
+    xw:create-button "go-once-button" [
+      xw:set-label "Go once"
+      xw:set-commands "run-relationships-once"
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 50
       xw:set-width 200
     ]
-    xw:create-button "update-commands" [
+    
+    xw:create-checkbox "go-forever" [
       xw:set-label "Update commands"
-      xw:set-commands "foreach center-column [update-commands-in-gui ?]"
+      xw:set-label "go forever"
+      xw:set-height 50
+      xw:on-selected?-change [
+        while [ [ xw:selected? ] xw:of "go-forever"]  [
+          run-relationships-once
+        ]
+      ]
+      
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 100
-      xw:set-width 200
-    ]
-    xw:create-button "update-command-args" [
-      xw:set-label "Update command args"
-      xw:set-commands "foreach center-column [update-command-args ? ]"
-      xw:set-x (margin * 3) + (left-column-width * 2)
-      xw:set-y margin + 150
       xw:set-width 200
     ]
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
       xw:set-x (margin * 3) + (left-column-width * 2)
-      xw:set-y margin + 200
+      xw:set-y margin + 150
       xw:set-width 200
     ]
     
@@ -157,7 +158,6 @@ to draw-center
     
     ;; list existing relationships; first find out if we're looking at startup or go relationships
     let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
-    show the-relationships
     foreach table:to-list the-relationships [
       let relationship-id first ?
       let the-entity last ?
@@ -188,9 +188,16 @@ to draw-center
         ]        
         let command-menu-name (word table:get the-entity "command-id" ":" table:get the-entity "command-name" )        
         xw:set-selected-procedure command-menu-name 
-  
-        xw:set-delete-command (word "delete-relationship " widget-name " draw-center")
+;        let relationship-type xw;; Change code here so we can delete setup relationships too. 
+
+      ifelse xw:get "setup-or-go" = "Go"[
+        xw:set-delete-command (word "delete-relationship" " " widget-name " draw-center")
         xw:set-run-command (word "run-relationship-by-id " relationship-id)
+      ]  
+      [
+        xw:set-delete-command (word "delete-setup-relationship" " " widget-name " draw-center")        
+        xw:set-run-command (word "run-setup-relationship-by-id " relationship-id)
+      ]
       ]
     ]
 end
@@ -200,8 +207,8 @@ end
 to update-commands-in-gui [a-relationship-widget]
   xw:ask a-relationship-widget [
     let chosen-agent-id first string:rex-split xw:selected-agent-reporter ":" 
-;    show chosen-agent-id
     ;; we run-result because it's a string and we need a number
+    show chosen-agent-id
     let chosen-agent-entity entity-from-id run-result chosen-agent-id
     xw:set-available-procedures map [(word ? ":" name-of entity-from-id ?) ] get-eligible-interactions chosen-agent-entity
   ]
@@ -226,9 +233,7 @@ end
 
 to update-agent-args [a-relationship-widget]
   xw:ask a-relationship-widget [
-;    show xw:selected-agent-reporter
     ;; we run-result because it's a string and we need a number
-;    show "..."
 ;    show run-result (first string:rex-split xw:selected-agent-reporter ":")
     let chosen-agent-id run-result (first string:rex-split xw:selected-agent-reporter ":")
 ;    let chosen-agent-entity entity-from-id run-result chosen-agent-id
@@ -255,6 +260,10 @@ end
 
 to delete-relationship [a-widget]
   table:remove relationships a-widget
+end
+
+to delete-setup-relationship [a-widget]
+  table:remove setup-relationships a-widget
 end
 
 ;; (map list [1 2 3] [a b c])
@@ -1143,6 +1152,11 @@ to run-relationship-by-id [id]
   run table:get the-relationship-table "task"
 end
 
+to run-setup-relationship-by-id [id]
+  let the-relationship-table table:get setup-relationships id
+  run table:get the-relationship-table "task"
+end
+
 to-report entity-ids-in-relationships
   report reduce sentence map [(sentence (list run-result table:get last ? "command-id" run-result table:get last ? "agent-id"))] table:to-list relationships 
 end
@@ -1151,8 +1165,15 @@ to-report relationships-with-entity-id [an-id]
   report filter [table:get last ? "agent-id" = an-id or table:get last ? "command-id" = an-id] table:to-list relationships
 end
 
-to-report arg-types [atask some-vars]
-  
+
+to run-relationships-once
+  let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
+  foreach table:to-list the-relationships[
+      xw:ask (word first ?) [
+        xw:set-color yellow 
+        run table:get last ? "task"
+        xw:set-color cyan]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
