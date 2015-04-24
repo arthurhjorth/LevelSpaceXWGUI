@@ -1,6 +1,41 @@
 extensions [ls table string xw ]
 __includes [ "notebook.nls" ]
 
+breed [models model]
+breed [entities-breed entity-breed]
+directed-link-breed [relationship-links relationship-link]
+
+
+to show-models
+  foreach all-observers[
+    let model-id first ?
+    let model-table last ?
+    let model-name table:get model-table "name"
+    create-models 1 [set label model-name ]
+  ]
+  layout-circle models 10
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
@@ -278,6 +313,7 @@ end
 ;; (map list [1 2 3] [a b c])
 
 to save-relationship-from-gui [a-widget]
+  show "saving"
   ;; We need seven things.
   ;; The two entities, and the actuals for each of them - all from the widget.
   ;; the task being called 
@@ -293,14 +329,13 @@ to save-relationship-from-gui [a-widget]
   let command-entity-name name-of command-entity
   
   let acting-args get-args acting-entity
+  let acting-actuals map [get-task entity-from-id runresult (first string:rex-split last ? ":")] [xw:selected-agentset-arguments ] xw:of  a-widget  
+;  ;; First create a list of those arguments that are entities. And one of those that aren't.
+;  let all-args [xw:selected-procedure-arguments] xw:of "new-rel"    
   let command-args [xw:selected-procedure-arguments] xw:of  a-widget
-;  show (word "command arg: " command-args)
-  let acting-actuals []
   let command-actuals map [get-task entity-from-id runresult (first string:rex-split last ? ":")] [xw:selected-procedure-arguments ] xw:of  a-widget
-  ;; Why do I thik we need seven? I think we just need six. Is the 7th for gui stuff?
-  
-  ;  show (list acting-entity command-entity acting-args command-args)
-;  add-ls-interaction-between acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args
+
+
   let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
   
   
@@ -450,6 +485,7 @@ to delete-entity [an-id]
     table:remove tasks an-id
   ]
   show-it
+  draw-center
 end
 
 to-report to-string [an-entity]
@@ -705,6 +741,7 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
       let the-task task[
         let command-task get-task second-entity
         let the-agents (runresult get-task first-entity [])
+        show first-entity
         ask the-agents [
           (run command-task map [runresult ?] ent2args)
         ]        
@@ -1299,28 +1336,29 @@ to load
   ]
   file-close-all
 end
+
 @#$#@#$#@
 GRAPHICS-WINDOW
 775
 10
-1391
-647
-50
-50
-6.0
+1271
+527
+13
+13
+18.0
+1
+12
+1
+1
 1
 0
 1
 1
 1
-0
-1
-1
-1
--50
-50
--50
-50
+-13
+13
+-13
+13
 0
 0
 1
