@@ -1,6 +1,7 @@
 extensions [ls table string xw ]
 __includes [ "notebook.nls" ]
 
+
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
@@ -15,6 +16,10 @@ globals [
   setup-relationships-serial
   
 ]
+
+to startup
+  setup
+end
 
 to setup
   ca
@@ -32,19 +37,20 @@ to setup
   table:put observer-entity "type" "observer"
   table:put observer-entity "args" []
   table:put observer-entity "name" "LevelSpace"
+  table:put observer-entity "builtin" true
+  table:put observer-entity "visible" true
   add-entity observer-entity
   
   
   set relationship-counter 0
-  load-and-setup-model "Wolf Sheep Predation.nlogo" 
-  load-and-setup-model "Climate Change.nlogo"
-  set wsp 0
-  set cc 1
-  ls:ask wsp "set grass? true"
-  ls:ask wsp "setup"
-  ls:ask cc "import-world \"ls-gui-setup\""
-  ls:show 0
-  ls:show 1
+;  load-and-setup-model "Climate Change.nlogo"
+;  set wsp 0
+;  set cc 1
+;  ls:ask wsp "set grass? true"
+;  ls:ask wsp "setup"
+;  ls:ask cc "import-world \"ls-gui-setup\""
+;  ls:show 0
+;  ls:show 1
   
   set left-column []
   set left-column-width 400
@@ -52,10 +58,10 @@ to setup
   
   set margin 10
   
-  
-  
   setup-notebook
-  reset-gui
+  
+  ;; for testing. take this out
+  load-and-setup-model "Wolf Sheep Predation.nlogo" 
 end
 
 to draw-GUI
@@ -67,13 +73,13 @@ end
 
 to draw-aux-buttons
   xw:ask "lsgui" [
-    xw:create-button "reset-gui-button" [
-      xw:set-label "Redraw Gui"
-      xw:set-commands "reset-gui"
-      xw:set-x (margin * 3) + (left-column-width * 2)
-      xw:set-y margin
-      xw:set-width 200
-    ]   
+;    xw:create-button "reset-gui-button" [
+;      xw:set-label "Redraw Gui"
+;      xw:set-commands "reset-gui"
+;      xw:set-x (margin * 3) + (left-column-width * 2)
+;      xw:set-y margin
+;      xw:set-width 200
+;    ]   
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
       xw:set-commands "run-relationships-once"
@@ -123,8 +129,6 @@ to draw-relationship-builder
       
     ]
     xw:on-change "setup-or-go" [draw-center]
-
-
   ]
 end
 
@@ -174,6 +178,8 @@ to draw-center
         update-commands-in-gui widget-name
         update-agent-args widget-name
         let temp-widget-name widget-name
+        xw:set-up-command (word "move-up " first ? " draw-center")
+        xw:set-down-command (word "move-down " first ? " draw-center")
         xw:on-selected-agent-reporter-change [
           update-commands-in-gui temp-widget-name
           update-agent-args temp-widget-name
@@ -205,6 +211,8 @@ end
 
 ;; call this when available-agent-reporters changes.
 to update-commands-in-gui [a-relationship-widget]
+  show (word "update-commands-in-gui " a-relationship-widget)
+  
   xw:ask a-relationship-widget [
     let chosen-agent-id first string:rex-split xw:selected-agent-reporter ":" 
     ;; we run-result because it's a string and we need a number
@@ -234,7 +242,6 @@ end
 to update-agent-args [a-relationship-widget]
   xw:ask a-relationship-widget [
     ;; we run-result because it's a string and we need a number
-;    show run-result (first string:rex-split xw:selected-agent-reporter ":")
     let chosen-agent-id run-result (first string:rex-split xw:selected-agent-reporter ":")
 ;    let chosen-agent-entity entity-from-id run-result chosen-agent-id
     xw:set-available-agentset-arguments get-arg-tuples chosen-agent-id
@@ -247,8 +254,8 @@ to-report get-arg-tuples [identity-id]
   let outer []
   foreach the-args[
 ;    let tuple (list ? map [table:get last ? "name"] get-eligible-arguments an-entity)
-    print ?
-    print get-eligible-arguments an-entity
+;    print ?
+;    print get-eligible-arguments an-entity
     let tuple (list ? map [(word first ? ":" table:get last ? "name")] get-eligible-arguments an-entity)
     set outer fput tuple outer
     xw:set-height xw:height + 20
@@ -369,7 +376,6 @@ to show-it
     set the-type "command"    
   ]
   
-  
   ;; add widget for creating new entities:
   xw:create-procedure-widget "new thing" [
     xw:set-name (word "New " the-type)
@@ -393,19 +399,38 @@ to add-entity-to-col [an-entity ]
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
   let the-name name-of the-entity
   let entity-id first an-entity
-  
-  ;; create a widget for it that has its name
-  xw:create-procedure-widget name-of entity-from-id entity-id [
-    xw:set-code to-string an-entity 
-    xw:set-name the-name
-    xw:set-x margin
-    xw:set-height 150
-    xw:set-width left-column-width
-    xw:set-args string:from-list get-args the-entity " "
-    xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
-    set left-column lput the-name left-column
-    xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
-    xw:set-delete-command (word "delete-entity " entity-id)
+;  print the-entity
+  ;; if it's builtin we just create a display widget for it
+  ifelse table:get the-entity "builtin"[
+    xw:create-procedure-display-widget name-of entity-from-id entity-id [
+;      xw:set-code to-string an-entity 
+      xw:set-name the-name
+      xw:set-x margin
+      xw:set-height 68
+      xw:set-color grey
+      xw:set-width left-column-width
+      xw:set-args string:from-list get-args the-entity " "
+      xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
+      set left-column lput the-name left-column
+;      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
+;      xw:set-delete-command (word "delete-entity " entity-id)
+    ]
+  ]
+  [
+    
+    ;; create a widget for it that has its name
+    xw:create-procedure-widget name-of entity-from-id entity-id [
+      xw:set-code to-string an-entity 
+      xw:set-name the-name
+      xw:set-x margin
+      xw:set-height 150
+      xw:set-width left-column-width
+      xw:set-args string:from-list get-args the-entity " "
+      xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
+      set left-column lput the-name left-column
+      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
+      xw:set-delete-command (word "delete-entity " entity-id)
+    ]
   ]
 end
 
@@ -485,6 +510,8 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   table:put task-table "args" args
   table:put task-table "type" the-type
   table:put task-table "contexts" permitted-contexts
+  table:put task-table "visible" true
+  table:put task-table "builtin" false
   ;; special case tasks created in the LevelSpace/Metaverse or whatever stupid name Bryan insists on. <3 <3
   ifelse model = "x"
   [
@@ -578,8 +605,7 @@ to load-and-setup-model [model-path]
   add-model-breeds the-model
   ;; and breed variables
   add-model-breed-vars the-model
-  
-  
+  reset-gui
 end
 
 to add-observer [the-model]
@@ -592,6 +618,8 @@ to add-observer [the-model]
   table:put observer-entity "type" the-type
   table:put observer-entity "args" []
   table:put observer-entity "name" name
+  table:put observer-entity "visible" true
+  table:put observer-entity "builtin" true
   add-entity observer-entity
   
 end
@@ -605,7 +633,10 @@ to add-model-procedures [the-model]
     ;; procedures always have postfix argument, so this is easy: 
     repeat length args [set args-string (word args-string " ?")]
     let task-string string:lower-case  (word procedure-name  args-string)
-    add-entity new-entity (word the-model "-" procedure-name) the-model task-string args the-type item 2 ?
+    let the-entity new-entity (word the-model "-" procedure-name) the-model task-string args the-type item 2 ?
+  table:put the-entity "visible" true
+  table:put the-entity "builtin" true
+    add-entity the-entity
   ]
 end
 
@@ -617,7 +648,9 @@ to add-model-globals [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "value"
-    add-entity new-entity (word the-model "-" global-name) the-model global-name args the-type "OTLP"
+    let the-entity new-entity (word the-model "-" global-name) the-model global-name args the-type "OTLP"
+    table:put the-entity "builtin" true
+    add-entity the-entity
   ]
 end
 
@@ -629,7 +662,9 @@ to add-model-breeds [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    add-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    let the-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    table:put the-entity "builtin" true
+    add-entity the-entity
     
   ]
   ;; finally add patches, links, and turtles 
@@ -640,7 +675,9 @@ to add-model-breeds [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    add-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    let the-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    table:put the-entity "builtin" true
+    add-entity the-entity
     
   ]  
 end
@@ -864,7 +901,9 @@ to add-model-breed-vars  [a-model]
       ;      let the-task task [runresult ?]
       let the-string ?
       let args []
-      add-entity new-entity entity-name a-model the-string args entity-type entity-otpl
+     let the-entity new-entity entity-name a-model the-string args entity-type entity-otpl
+     table:put the-entity "builtin" true
+      add-entity the-entity
     ]
   ]
 end
@@ -1058,11 +1097,12 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ]
   [
     set code-worked? false
-    show (word code " did not compile correctly")
+    xw:ask "new thing" [xw:set-color red]
   ]  
   if code-worked?
   [
     table:put tasks entity-id the-entity
+    draw-center ;; redraw center to update the new entity in all drop downs
   ]
 end
 
@@ -1081,11 +1121,12 @@ to new-entity-from-widget [a-widget-name]
   ]
   [
     set code-worked? false
-    show (word code " did not compile correctly")
+    xw:ask "new thing" [xw:set-color red]
   ]
   if code-worked?
   [  
     add-entity the-entity
+    draw-center ;; redraw center to update the new entity in all drop downs    
   ]
 end
 
@@ -1239,17 +1280,36 @@ to move-down [a-relationship-id]
     ]
   ]
 end
+
+to save
+  if file-exists? "levelspace_save_test" [file-delete "levelspace_save_test.txt"]
+  file-open "levelspace_save_test.txt"
+  foreach table:to-list tasks [
+    file-print (list first ? table:to-list last ?) 
+  ]
+  file-close-all
+end
+
+to load
+  file-open "levelspace_save_test.txt"
+  while [not file-at-end?][
+    print file-read-line
+  ]
+  file-close-all
+end
+
+
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+775
 10
-455
-236
-7
-7
-13.0
+1391
+647
+50
+50
+6.0
 1
-10
+0
 1
 1
 1
@@ -1257,83 +1317,15 @@ GRAPHICS-WINDOW
 1
 1
 1
--7
-7
--7
-7
+-50
+50
+-50
+50
 0
 0
 1
 ticks
-30.0
-
-BUTTON
-58
-78
-121
-111
-NIL
-go
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-16
-23
-196
-56
-NIL
-simulate-eco-ls-system
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-12
-123
-140
-156
-Create an entity
-gui-add-entity
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-52
-337
-192
-370
-Run relationships
-run-relationships
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
+1.0
 
 @#$#@#$#@
 ## notes
