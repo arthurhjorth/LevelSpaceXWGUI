@@ -1255,7 +1255,7 @@ to move-down [a-relationship-id]
   ;; find out where in the list it is
   let initial-position position a-relationship-id relationship-keys
   ;; do something only if it's not already first
-  if initial-position < (length relationship-keys + 1)  [
+  if initial-position < (length relationship-keys) - 1  [
     ;; create three sublists. One containing everything before the two numbesr being swappe.d
     let list1 sublist relationship-keys 0 (initial-position)
     ;; one containing the two numbers
@@ -1297,8 +1297,6 @@ to load
   ]
   file-close-all
 end
-
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 775
