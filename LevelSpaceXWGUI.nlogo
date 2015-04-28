@@ -16,27 +16,6 @@ to show-models
   layout-circle models 10
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
@@ -49,7 +28,6 @@ globals [
   entity-serial
   relationship-serial
   setup-relationships-serial
-  
 ]
 
 to startup
@@ -108,28 +86,29 @@ end
 
 to draw-aux-buttons
   xw:ask "lsgui" [
-;    xw:create-button "reset-gui-button" [
-;      xw:set-label "Redraw Gui"
-;      xw:set-commands "reset-gui"
-;      xw:set-x (margin * 3) + (left-column-width * 2)
-;      xw:set-y margin
-;      xw:set-width 200
-;    ]   
+    xw:create-button "run-setups" [
+      xw:set-label "Run Setup Commands"
+      xw:set-commands "run-setup-relationships-once"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin
+      xw:set-width 200
+    ]
+      
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
-      xw:set-commands "run-relationships-once"
+      xw:set-commands "run-go-relationships-once"
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 50
       xw:set-width 200
     ]
     
-    xw:create-checkbox "go-forever" [
+    xw:create-toggle-button "go-forever" [
       xw:set-label "Update commands"
-      xw:set-label "go forever"
+      xw:set-label "Go"
       xw:set-height 50
       xw:on-selected?-change [
         while [ [ xw:selected? ] xw:of "go-forever"]  [
-          run-relationships-once
+          run-go-relationships-once
         ]
       ]
       
@@ -137,6 +116,7 @@ to draw-aux-buttons
       xw:set-y margin + 100
       xw:set-width 200
     ]
+
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
@@ -228,7 +208,9 @@ to draw-center
 
         ]        
         let command-menu-name (word table:get the-entity "command-id" ":" table:get the-entity "command-name" )        
-        xw:set-selected-procedure command-menu-name 
+        xw:set-selected-procedure command-menu-name
+        update-command-args temp-widget-name
+        xw:set-selected-procedure-arguments table:get the-entity "command-arg-names"
 ;        let relationship-type xw;; Change code here so we can delete setup relationships too. 
 
       ifelse xw:get "setup-or-go" = "Go"[
@@ -420,7 +402,7 @@ to show-it
     xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
     set left-column lput "new thing" left-column
     xw:set-color blue
-    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"  show-it") 
+    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"") 
   ]
   
 ;   add entities to the gui
@@ -463,7 +445,7 @@ to add-entity-to-col [an-entity ]
       xw:set-args string:from-list get-args the-entity " "
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
-      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
+      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  "")
       xw:set-delete-command (word "delete-entity " entity-id)
     ]
   ]
@@ -1134,12 +1116,13 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ]
   [
     set code-worked? false
-    xw:ask "new thing" [xw:set-color red]
+    xw:ask a-widget-name [xw:set-color red]
   ]  
   if code-worked?
   [
     table:put tasks entity-id the-entity
     draw-center ;; redraw center to update the new entity in all drop downs
+    show-it
   ]
 end
 
@@ -1164,6 +1147,7 @@ to new-entity-from-widget [a-widget-name]
   [  
     add-entity the-entity
     draw-center ;; redraw center to update the new entity in all drop downs    
+    show-it
   ]
 end
 
@@ -1244,13 +1228,24 @@ to-report relationships-with-entity-id [an-id]
 end
 
 
-to run-relationships-once
-  let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
-  foreach table:to-list the-relationships[
+to run-setup-relationships-once
+  run-relationships-once setup-relationships
+end
+
+to run-go-relationships-once
+  run-relationships-once relationships
+end
+
+to run-relationships-once [ the-relationships ]
+  foreach table:to-list the-relationships [
+    if member? (word first ?) xw:widgets [
       xw:ask (word first ?) [
-        xw:set-color yellow 
-        run table:get last ? "task"
-        xw:set-color cyan]
+        xw:set-color yellow
+        display
+        xw:set-color cyan
+      ]
+    ]
+    run table:get last ? "task"
   ]
 end
 
@@ -1292,7 +1287,7 @@ to move-down [a-relationship-id]
   ;; find out where in the list it is
   let initial-position position a-relationship-id relationship-keys
   ;; do something only if it's not already first
-  if initial-position < (length relationship-keys + 1)  [
+  if initial-position < (length relationship-keys) - 1  [
     ;; create three sublists. One containing everything before the two numbesr being swappe.d
     let list1 sublist relationship-keys 0 (initial-position)
     ;; one containing the two numbers
@@ -1334,7 +1329,6 @@ to load
   ]
   file-close-all
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 775
