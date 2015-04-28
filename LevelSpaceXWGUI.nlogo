@@ -107,16 +107,17 @@ end
 
 to draw-aux-buttons
   xw:ask "lsgui" [
-;    xw:create-button "reset-gui-button" [
-;      xw:set-label "Redraw Gui"
-;      xw:set-commands "reset-gui"
-;      xw:set-x (margin * 3) + (left-column-width * 2)
-;      xw:set-y margin
-;      xw:set-width 200
-;    ]   
+    xw:create-button "run-setups" [
+      xw:set-label "Run Setup Commands"
+      xw:set-commands "run-setup-relationships-once"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin
+      xw:set-width 200
+    ]
+      
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
-      xw:set-commands "run-relationships-once"
+      xw:set-commands "run-go-relationships-once"
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 50
       xw:set-width 200
@@ -128,7 +129,7 @@ to draw-aux-buttons
       xw:set-height 50
       xw:on-selected?-change [
         while [ [ xw:selected? ] xw:of "go-forever"]  [
-          run-relationships-once
+          run-go-relationships-once
         ]
       ]
       
@@ -1248,13 +1249,24 @@ to-report relationships-with-entity-id [an-id]
 end
 
 
-to run-relationships-once
-  let the-relationships ifelse-value (xw:get "setup-or-go" = "Go") [relationships][setup-relationships]
-  foreach table:to-list the-relationships[
+to run-setup-relationships-once
+  run-relationships-once setup-relationships
+end
+
+to run-go-relationships-once
+  run-relationships-once relationships
+end
+
+to run-relationships-once [ the-relationships ]
+  foreach table:to-list the-relationships [
+    if member? (word first ?) xw:widgets [
       xw:ask (word first ?) [
-        xw:set-color yellow 
-        run table:get last ? "task"
-        xw:set-color cyan]
+        xw:set-color yellow
+        display
+        xw:set-color cyan
+      ]
+    ]
+    run table:get last ? "task"
   ]
 end
 
