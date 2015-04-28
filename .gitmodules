@@ -7,3 +7,6 @@
 [submodule "modules/LSWidgets"]
 	path = modules/LSWidgets
 	url = git@github.com:qiemem/LSWidgets.git
+[submodule "modules/String-Extension"]
+	path = modules/String-Extension
+	url = git@github.com:NetLogo/String-Extension.git
