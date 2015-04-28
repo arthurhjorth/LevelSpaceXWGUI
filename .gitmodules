@@ -4,3 +4,6 @@
 [submodule "modules/LevelsSpace"]
 	path = modules/LevelsSpace
 	url = git@github.com:NetLogo/LevelsSpace.git
+[submodule "modules/LSWidgets"]
+	path = modules/LSWidgets
+	url = git@github.com:qiemem/LSWidgets.git
