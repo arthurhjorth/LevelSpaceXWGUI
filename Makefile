@@ -47,3 +47,4 @@ $(LS_MOD)/extensions/ls: $(LS_MOD)/src
 
 clean:
 	rm -rf xw ls string
+	git submodule foreach git clean -fdX
