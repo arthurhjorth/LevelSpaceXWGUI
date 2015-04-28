@@ -16,27 +16,6 @@ to show-models
   layout-circle models 10
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
@@ -77,14 +56,6 @@ to setup
   
   
   set relationship-counter 0
-;  load-and-setup-model "Climate Change.nlogo"
-;  set wsp 0
-;  set cc 1
-;  ls:ask wsp "set grass? true"
-;  ls:ask wsp "setup"
-;  ls:ask cc "import-world \"ls-gui-setup\""
-;  ls:show 0
-;  ls:show 1
   
   set left-column []
   set left-column-width 400
@@ -93,9 +64,7 @@ to setup
   set margin 10
   
   setup-notebook
-  
-  ;; for testing. take this out
-  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+  reset-gui
 end
 
 to draw-GUI
@@ -1336,7 +1305,6 @@ to load
   ]
   file-close-all
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 775
