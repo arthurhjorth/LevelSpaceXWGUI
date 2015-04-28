@@ -14,7 +14,6 @@ globals [
   entity-serial
   relationship-serial
   setup-relationships-serial
-  
 ]
 
 to startup
@@ -102,6 +101,7 @@ to draw-aux-buttons
       xw:set-y margin + 100
       xw:set-width 200
     ]
+
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
@@ -193,7 +193,9 @@ to draw-center
 
         ]        
         let command-menu-name (word table:get the-entity "command-id" ":" table:get the-entity "command-name" )        
-        xw:set-selected-procedure command-menu-name 
+        xw:set-selected-procedure command-menu-name
+        update-command-args temp-widget-name
+        xw:set-selected-procedure-arguments table:get the-entity "command-arg-names"
 ;        let relationship-type xw;; Change code here so we can delete setup relationships too. 
 
       ifelse xw:get "setup-or-go" = "Go"[
