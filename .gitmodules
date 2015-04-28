@@ -1,3 +1,6 @@
 [submodule "modules/eXtraWidgets"]
 	path = modules/eXtraWidgets
 	url = https://github.com/qiemem/eXtraWidgets.git
+[submodule "modules/LevelsSpace"]
+	path = modules/LevelsSpace
+	url = git@github.com:NetLogo/LevelsSpace.git
