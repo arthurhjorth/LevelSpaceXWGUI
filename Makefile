@@ -5,8 +5,9 @@ XW_TARGET=modules/eXtraWidgets/xw
 XW_WIDGET_JARS=$(addprefix xw/widgets/,$(XW_WIDGETS))
 XW_WIDGET_SRCS=$(addprefix modules/eXtraWidgets/xw/widgets/,$(XW_WIDGETS))
 LS_XW_MOD=modules/LSWidgets
+LS_MOD=modules/LevelsSpace
 
-default: string/string.jar xw/xw.jar xw/widgets/LSWidgets
+default: string/string.jar xw/xw.jar xw/widgets/LSWidgets ls/ls.jar
 
 modules: $(STRING_MOD) modules/LevelsSpace modules/eXtraWidgets modules/LSWidgets
 	mkdir -p modules
@@ -34,3 +35,10 @@ xw/widgets/LSWidgets: xw/xw.jar $(LS_XW_MOD)/src $(LS_XW_MOD)/lib/extrawidgets-a
 	mkdir -p xw/widgets/LSWidgets
 	cd $(LS_XW_MOD); sbt package
 	cp $(LS_XW_MOD)/*.jar xw/widgets/LSWidgets
+
+ls/ls.jar: $(LS_MOD)/extensions/ls
+	mkdir -p ls
+	cp $(LS_MOD)/extensions/ls/* ls
+
+$(LS_MOD)/extensions/ls: $(LS_MOD)/src
+	cd $(LS_MOD); sbt package
