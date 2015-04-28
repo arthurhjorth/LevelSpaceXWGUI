@@ -6,6 +6,7 @@ XW_WIDGET_JARS=$(addprefix xw/widgets/,$(XW_WIDGETS))
 XW_WIDGET_SRCS=$(addprefix modules/eXtraWidgets/xw/widgets/,$(XW_WIDGETS))
 LS_XW_MOD=modules/LSWidgets
 LS_MOD=modules/LevelsSpace
+SBT=env SBT_OPTS="-Xms512M -Xmx2048M -Xss6M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=724M" sbt
 
 default: string/string.jar xw/xw.jar xw/widgets/LSWidgets ls/ls.jar
 
@@ -22,7 +23,7 @@ string/string.jar: $(STRING_MOD)/string.jar
 
 xw/xw.jar $(XW_WIDGET_JARS) $(XW_MOD)/xw/extrawidgets-api.jar: $(XW_MOD)/xw/src $(XW_MOD)/api/src $(XW_MOD)/core/src
 	mkdir -p xw
-	cd $(XW_MOD); sbt package
+	cd $(XW_MOD); $(SBT) package
 	cp $(XW_TARGET)/json-simple-1.1.1.jar xw
 	cp $(XW_TARGET)/extrawidgets-api.jar xw
 	cp $(XW_TARGET)/extrawidgets-core.jar xw
@@ -35,7 +36,7 @@ $(LS_XW_MOD)/lib/extrawidgets-api.jar: $(XW_MOD)/xw/extrawidgets-api.jar
 
 xw/widgets/LSWidgets: xw/xw.jar $(LS_XW_MOD)/src $(LS_XW_MOD)/lib/extrawidgets-api.jar
 	mkdir -p xw/widgets/LSWidgets
-	cd $(LS_XW_MOD); sbt package
+	cd $(LS_XW_MOD); $(SBT) package
 	cp $(LS_XW_MOD)/*.jar xw/widgets/LSWidgets
 
 ls/ls.jar: $(LS_MOD)/extensions/ls
@@ -43,7 +44,7 @@ ls/ls.jar: $(LS_MOD)/extensions/ls
 	cp $(LS_MOD)/extensions/ls/* ls
 
 $(LS_MOD)/extensions/ls: $(LS_MOD)/src
-	cd $(LS_MOD); sbt package
+	cd $(LS_MOD); $(SBT) package
 
 clean:
 	rm -rf xw ls string
