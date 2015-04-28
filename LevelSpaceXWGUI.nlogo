@@ -16,6 +16,27 @@ to show-models
   layout-circle models 10
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
@@ -56,6 +77,14 @@ to setup
   
   
   set relationship-counter 0
+;  load-and-setup-model "Climate Change.nlogo"
+;  set wsp 0
+;  set cc 1
+;  ls:ask wsp "set grass? true"
+;  ls:ask wsp "setup"
+;  ls:ask cc "import-world \"ls-gui-setup\""
+;  ls:show 0
+;  ls:show 1
   
   set left-column []
   set left-column-width 400
@@ -64,7 +93,9 @@ to setup
   set margin 10
   
   setup-notebook
-  reset-gui
+  
+  ;; for testing. take this out
+  load-and-setup-model "Wolf Sheep Predation.nlogo" 
 end
 
 to draw-GUI
@@ -391,7 +422,7 @@ to show-it
     xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
     set left-column lput "new thing" left-column
     xw:set-color blue
-    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"  show-it") 
+    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"") 
   ]
   
 ;   add entities to the gui
@@ -434,7 +465,7 @@ to add-entity-to-col [an-entity ]
       xw:set-args string:from-list get-args the-entity " "
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
-      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
+      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  "")
       xw:set-delete-command (word "delete-entity " entity-id)
     ]
   ]
@@ -1105,12 +1136,13 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ]
   [
     set code-worked? false
-    xw:ask "new thing" [xw:set-color red]
+    xw:ask a-widget-name [xw:set-color red]
   ]  
   if code-worked?
   [
     table:put tasks entity-id the-entity
     draw-center ;; redraw center to update the new entity in all drop downs
+    show-it
   ]
 end
 
@@ -1135,6 +1167,7 @@ to new-entity-from-widget [a-widget-name]
   [  
     add-entity the-entity
     draw-center ;; redraw center to update the new entity in all drop downs    
+    show-it
   ]
 end
 
