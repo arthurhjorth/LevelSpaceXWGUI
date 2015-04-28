@@ -24,8 +24,10 @@ xw/xw.jar $(XW_WIDGET_JARS) $(XW_MOD)/xw/extrawidgets-api.jar: $(XW_MOD)/xw/src 
 	mkdir -p xw
 	cd $(XW_MOD); sbt package
 	cp $(XW_TARGET)/json-simple-1.1.1.jar xw
+	cp $(XW_TARGET)/extrawidgets-api.jar xw
+	cp $(XW_TARGET)/extrawidgets-core.jar xw
+	cp $(XW_TARGET)/xw.jar xw
 	cp -r $(XW_TARGET)/widgets xw
-	cp -r $(XW_TARGET)/xw.jar xw
 
 $(LS_XW_MOD)/lib/extrawidgets-api.jar: $(XW_MOD)/xw/extrawidgets-api.jar
 	mkdir -p $(LS_XW_MOD)/lib
@@ -42,3 +44,6 @@ ls/ls.jar: $(LS_MOD)/extensions/ls
 
 $(LS_MOD)/extensions/ls: $(LS_MOD)/src
 	cd $(LS_MOD); sbt package
+
+clean:
+	rm -rf xw ls string
