@@ -16,27 +16,6 @@ to show-models
   layout-circle models 10
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 globals [
   tasks ;; this is a table that contains all custom made tasks (i.e. left hand side stuff)
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
@@ -123,9 +102,9 @@ to draw-aux-buttons
       xw:set-width 200
     ]
     
-    xw:create-checkbox "go-forever" [
+    xw:create-toggle-button "go-forever" [
       xw:set-label "Update commands"
-      xw:set-label "go forever"
+      xw:set-label "Go"
       xw:set-height 50
       xw:on-selected?-change [
         while [ [ xw:selected? ] xw:of "go-forever"]  [
