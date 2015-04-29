@@ -1253,10 +1253,13 @@ end
 
 to run-relationships-once [ the-relationships ]
   let delay (xw:get "run-speed") / 2000
-  wait delay
-  let still-need-to-delay? true
+  let still-need-to-delay? false
+  if (delay > 0) [ 
+    wait delay 
+    set still-need-to-delay? true
+  ]
   foreach table:to-list the-relationships [
-    if member? (word first ?) xw:widgets [
+    if member? (word first ?) xw:widgets and delay > 0 [
       xw:ask (word first ?) [
         xw:set-color yellow
         wait delay
