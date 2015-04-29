@@ -75,6 +75,7 @@ to setup
   
   ;; for testing. take this out
   load-and-setup-model "Wolf Sheep Predation.nlogo" 
+  reset-ticks
 end
 
 to draw-GUI
@@ -117,11 +118,23 @@ to draw-aux-buttons
       xw:set-width 200
     ]
 
+
+     xw:create-slider "run-speed" [
+      xw:set-label "Run Step Delay"
+      xw:set-units "ms"
+      xw:set-maximum 1000
+      xw:set-value 300
+       xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 150
+      xw:set-width 200
+    ]
+     
+     
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
       xw:set-x (margin * 3) + (left-column-width * 2)
-      xw:set-y margin + 150
+      xw:set-y margin + 220
       xw:set-width 200
     ]
     
@@ -1237,16 +1250,22 @@ to run-go-relationships-once
 end
 
 to run-relationships-once [ the-relationships ]
+  let delay (xw:get "run-speed") / 2000
+  wait delay
+  let still-need-to-delay? true
   foreach table:to-list the-relationships [
     if member? (word first ?) xw:widgets [
       xw:ask (word first ?) [
         xw:set-color yellow
-        display
+        wait delay
+        set still-need-to-delay? false
         xw:set-color cyan
       ]
     ]
+    if (still-need-to-delay?) [ wait delay ]
     run table:get last ? "task"
   ]
+  tick
 end
 
 to move-up [a-relationship-id ]
