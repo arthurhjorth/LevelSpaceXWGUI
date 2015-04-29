@@ -34,10 +34,12 @@ $(LS_XW_MOD)/lib/extrawidgets-api.jar: $(XW_MOD)/xw/extrawidgets-api.jar
 	mkdir -p $(LS_XW_MOD)/lib
 	cp $? $@
 
-xw/widgets/LSWidgets: xw/xw.jar $(LS_XW_MOD)/src $(LS_XW_MOD)/lib/extrawidgets-api.jar
+xw/widgets/LSWidgets xw/widgets/LSWidgets/LSWidgets.jar: xw/xw.jar $(LS_XW_MOD)/LSWidgets.jar
 	mkdir -p xw/widgets/LSWidgets
-	cd $(LS_XW_MOD); $(SBT) package
 	cp $(LS_XW_MOD)/*.jar xw/widgets/LSWidgets
+
+$(LS_XW_MOD)/LSWidgets.jar: $(LS_XW_MOD)/src $(LS_XW_MOD)/lib/extrawidgets-api.jar
+	cd $(LS_XW_MOD); $(SBT) package
 
 ls/ls.jar: $(LS_MOD)/extensions/ls
 	mkdir -p ls
