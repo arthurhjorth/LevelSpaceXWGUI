@@ -1243,10 +1243,12 @@ end
 
 to run-setup-relationships-once
   run-relationships-once setup-relationships
+  reset-ticks
 end
 
 to run-go-relationships-once
   run-relationships-once relationships
+  tick
 end
 
 to run-relationships-once [ the-relationships ]
@@ -1265,7 +1267,6 @@ to run-relationships-once [ the-relationships ]
     if (still-need-to-delay?) [ wait delay ]
     run table:get last ? "task"
   ]
-  tick
 end
 
 to move-up [a-relationship-id ]
