@@ -22,11 +22,21 @@ to startup
     xw:set-height 75
     xw:set-width 500
     xw:set-name "turtles"
-    xw:set-args ""
+    xw:set-args "some args"
     xw:set-type "Agentset"
     xw:set-visible? false
   ]
   
+  xw:create-procedure-display-widget "pd-no-arg-test" [
+    xw:set-y 580
+    xw:set-height 45
+    xw:set-width 500
+    xw:set-name "no-arg-procedure"
+    xw:set-args ""
+    xw:set-type "Command"
+    xw:set-visible? false
+  ]
+    
   xw:create-relationship "rel-test" [
     xw:set-x [xw:width + 10] xw:of "test"
     xw:set-width 380

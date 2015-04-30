@@ -8,11 +8,12 @@ LS_XW_MOD=modules/LSWidgets
 LS_MOD=modules/LevelsSpace
 SBT=env SBT_OPTS="-Xms512M -Xmx2048M -Xss6M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=724M" sbt
 
-default: string/string.jar xw/xw.jar xw/widgets/LSWidgets ls/ls.jar
+default: string/string.jar xw/xw.jar xw/widgets/LSWidgets/LSWidgets.jar ls/ls.jar
 
-modules: $(STRING_MOD) modules/LevelsSpace modules/eXtraWidgets modules/LSWidgets
+modules $(STRING_MOD) $(LS_MOD) $(XW_MOD) $(LS_XW_MOD): .git/modules/$(STRING_MOD) .git/modules/$(LS_MOD) .git/modules/$(XW_MOD) .git/modules/$(LS_XW_MOD)
 	mkdir -p modules
 	git submodule update --init
+	touch modules
 
 $(STRING_MOD)/string.jar: $(STRING_MOD)/src
 	make -C $(STRING_MOD) --file=Makefile
