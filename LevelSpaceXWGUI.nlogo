@@ -376,17 +376,33 @@ to draw-entity-lister
     xw:create-chooser "data-types" [
       xw:set-label "Show this model's entities of type: " 
       xw:set-items ["Extended Agents" "Reporters" "Commands"] 
+      xw:set-selected-item "Extended Agents"
       xw:set-x margin
       xw:set-width left-column-width
       ;; only find the height of them all except the last because that is itself
       xw:set-y margin + sum map [[xw:height] xw:of ?] butlast xw:widgets
       set left-column lput "data-types"  left-column 
     ]
-
+    
+    ;; take last letter out to remove pluralization
+    let the-type substring xw:get "data-types" 0 (length xw:get "data-types" - 1) 
+    ;; add widget for creating new entities:
+    xw:create-procedure-widget "new thing" [
+      xw:set-name (word "New " the-type)
+      xw:set-x margin
+      xw:set-height 150
+      xw:set-width left-column-width
+      xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
+      set left-column lput "new thing" left-column
+      xw:set-color blue
+      xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"") 
+    ]
+    
+    
   ]
   
   xw:on-change "Models" [show-it]
-  xw:on-change "data-types" [show-it]
+  xw:on-change "data-types" [show-it xw:ask "new thing" [xw:set-name  (word "New " substring xw:get "data-types" 0 (length xw:get "data-types" - 1))] ]
   
 end
 
@@ -408,17 +424,6 @@ to show-it
     set the-type "command"    
   ]
   
-  ;; add widget for creating new entities:
-  xw:create-procedure-widget "new thing" [
-    xw:set-name (word "New " the-type)
-    xw:set-x margin
-    xw:set-height 150
-    xw:set-width left-column-width
-    xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
-    set left-column lput "new thing" left-column
-    xw:set-color blue
-    xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"") 
-  ]
   
 ;   add entities to the gui
   foreach reverse the-entities [add-entity-to-col ?]
@@ -1074,7 +1079,7 @@ to clear-center
 end
 
 to clear-left
-  foreach (sublist left-column 2 length left-column ) [
+  foreach (sublist left-column 3 length left-column ) [
     set left-column remove ? left-column
     xw:remove ?
   ]
