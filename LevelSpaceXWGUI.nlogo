@@ -205,6 +205,7 @@ to draw-center
         xw:set-selected-agent-reporter agent-menu-name
         update-commands-in-gui widget-name
         update-agent-args widget-name
+        xw:set-selected-agentset-argument-indices table:get the-entity "agent-arg-indices"
         let temp-widget-name widget-name
         xw:set-up-command (word "move-up " first ? " draw-center")
         xw:set-down-command (word "move-down " first ? " draw-center")
@@ -223,8 +224,7 @@ to draw-center
         let command-menu-name (word table:get the-entity "command-id" ":" table:get the-entity "command-name" )        
         xw:set-selected-procedure command-menu-name
         update-command-args temp-widget-name
-        xw:set-selected-procedure-arguments table:get the-entity "command-arg-names"
-;        let relationship-type xw;; Change code here so we can delete setup relationships too. 
+        xw:set-selected-procedure-argument-indices table:get the-entity "command-arg-indices"
 
       ifelse xw:get "setup-or-go" = "Go"[
         xw:set-delete-command (word "delete-relationship" " " widget-name " draw-center")
@@ -320,19 +320,23 @@ to save-relationship-from-gui [a-widget]
   let command-entity-name name-of command-entity
   
   let acting-args get-args acting-entity
-  let agent-arg-items [xw:selected-agentset-arguments-indices] xw:of a-widget
+  let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
   let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
 
   let command-args get-args command-entity
   let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
   let command-actuals actuals-from-item-tuples command-entity command-arg-items
-
+  
   ;;Now  get the interaction-task between these two
   let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
   ;; and create a relationship (a table with all the info we want )
   let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
   ;; and now add it to the right place
   let relationship-type xw:get "setup-or-go"
+  ;; Also add agent and command arg-indices
+  table:put the-relationship "agent-arg-indices" agent-arg-items
+  table:put the-relationship "command-arg-indices" command-arg-items
+  
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   table:put the-table relationship-counter the-relationship
   set relationship-counter relationship-counter + 1
