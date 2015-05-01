@@ -287,7 +287,7 @@ to-report get-arg-tuples [identity-id]
 ;    print ?
 ;    print get-eligible-arguments an-entity
     let tuple (list ? map [(word first ? ":" table:get last ? "name")] get-eligible-arguments an-entity)
-    set outer fput tuple outer
+    set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
   report outer
@@ -352,9 +352,6 @@ to-report actuals-from-item-tuples [the-entity list-of-var-item-tuples]
   ]
   report map [get-task entity-from-id ?] ids-of-actuals
 end
-
-
-
 
 to draw-entity-lister
   xw:ask "lsgui" [
@@ -1105,8 +1102,6 @@ to save-entity-from-widget [a-widget-name entity-id]
   [
     existing-entity-from-widget a-widget-name entity-id
   ]
-  
-  
 end
 
 to existing-entity-from-widget [a-widget-name entity-id]
@@ -1143,7 +1138,7 @@ to new-entity-from-widget [a-widget-name]
   let code [xw:code] xw:of a-widget-name
   ;; turn args into a list of args, not just one long string
   let args-string string:trim [xw:args] xw:of a-widget-name
-  let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
+  let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " "]
   let the-type current-type
   let the-entity 0
   let code-worked? true
