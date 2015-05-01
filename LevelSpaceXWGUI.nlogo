@@ -94,7 +94,7 @@ to draw-aux-buttons
       xw:set-y margin
       xw:set-width 200
     ]
-      
+
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
       xw:set-commands "run-go-relationships-once"
@@ -306,34 +306,32 @@ end
 ;; (map list [1 2 3] [a b c])
 
 to save-relationship-from-gui [a-widget]
-  show "saving"
-  ;; We need seven things.
-  ;; The two entities, and the actuals for each of them - all from the widget.
-  ;; the task being called 
-  ;; the names of args, with get-args from the entities
-  
-  
-  ;; runresults because we get a string but want id as a number
-  let chosen-agent-id [first string:rex-split xw:selected-agent-reporter ":" ] xw:of a-widget
-  let acting-entity entity-from-id run-result chosen-agent-id
+  ;; find the agent
+  let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-widget
+  ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
+  let acting-entity-id agent-entity-id-from-item chosen-agent-item
+  let acting-entity entity-from-id acting-entity-id
   let acting-entity-name name-of acting-entity
-  let chosen-command-id [first string:rex-split xw:selected-procedure ":" ] xw:of a-widget
-  let command-entity entity-from-id run-result chosen-command-id
+  
+  ; and now do the same for the procedure
+  let chosen-command-item [xw:selected-procedure-index] xw:of a-widget
+  let command-entity-id command-entity-id-from-item acting-entity chosen-command-item
+  let command-entity entity-from-id command-entity-id
   let command-entity-name name-of command-entity
   
   let acting-args get-args acting-entity
-  let acting-actuals map [get-task entity-from-id runresult (first string:rex-split last ? ":")] [xw:selected-agentset-arguments ] xw:of  a-widget  
-;  ;; First create a list of those arguments that are entities. And one of those that aren't.
-;  let all-args [xw:selected-procedure-arguments] xw:of "new-rel"    
-  let command-args [xw:selected-procedure-arguments] xw:of  a-widget
-  let command-actuals map [get-task entity-from-id runresult (first string:rex-split last ? ":")] [xw:selected-procedure-arguments ] xw:of  a-widget
+  let agent-arg-items [xw:selected-agentset-arguments-indices] xw:of a-widget
+  let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
 
+  let command-args get-args command-entity
+  let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
+  let command-actuals actuals-from-item-tuples command-entity command-arg-items
 
+  ;;Now  get the interaction-task between these two
   let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
-  
-  
-  let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args chosen-agent-id chosen-command-id
-  
+  ;; and create a relationship (a table with all the info we want )
+  let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
+  ;; and now add it to the right place
   let relationship-type xw:get "setup-or-go"
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   table:put the-table relationship-counter the-relationship
@@ -341,19 +339,19 @@ to save-relationship-from-gui [a-widget]
 end
 
 
-;to update-agents-in-gui
-;  xw:ask "new-rel"[
-;          xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
-;  ]
-;end
-;; this is a callback procedure, called by the 1st entity selector
-;; this populates the 2nd entity selector, based on what agent is selected as 'actor'
-
-to list-eligible-entities
-  ;; create a relationship widget here
-  ;; we need some code in here to deal with the number 
+; AH: ATTENTION BRYAN, this is where we need to deal with wrapping literals in tasks
+to-report actuals-from-item-tuples [the-entity list-of-var-item-tuples]
+  ;; we get a list of tuples, e.g. [["m" 0] ["n" 0]] ["name" item]. We need to turn that into a list of tasks
+  let ids-of-eligible-args map [first ?] get-eligible-arguments the-entity
+  let ids-of-actuals []
+  foreach list-of-var-item-tuples [
+    ;; AH: if (last ?) = -1, it is a literal.
+    ;; get the id at the position of the selected item from the dropdown
+    let the-actual-id item (last ?) ids-of-eligible-args
+    set ids-of-actuals lput the-actual-id ids-of-actuals
+  ]
+  report map [get-task entity-from-id ?] ids-of-actuals
 end
-
 
 
 
@@ -747,7 +745,7 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
     if second-entity-type = "command" [
       let the-observer-id get-model first-entity
       let the-command get-task second-entity
-      let the-task task [
+      let the-task task [ 
         ;; again here we first resolve the args
         let actual-args2 map [(run-result ? [] )] ent2args
         (run the-command actual-args2)
@@ -1351,6 +1349,18 @@ to load
     print file-read-line
   ]
   file-close-all
+end
+
+to-report agent-entity-id-from-item [item-id]
+  ;; first get all the agents
+  let agent-entity-ids map [first ? ] all-agent-entities
+  report item item-id agent-entity-ids
+end
+
+to-report command-entity-id-from-item [chosen-agent item-id]
+  ;; this depends on which agent entity is chosen, so first we get eligible commands for that agent
+  let command-entity-ids get-eligible-interactions chosen-agent
+  report item item-id command-entity-ids
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
