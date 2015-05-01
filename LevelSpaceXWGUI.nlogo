@@ -518,7 +518,7 @@ to-report make-variadic-task [astring args]
   let sb []
   ;; add spaces so that we can test for hard brackets
   set astring add-spaces astring
-  foreach string:rex-split astring " " [
+  foreach string:rex-split astring "\\s" [
     ifelse member? ? args[
       set sb lput (word "(item " (position ? args) " ?)") sb
     ]
