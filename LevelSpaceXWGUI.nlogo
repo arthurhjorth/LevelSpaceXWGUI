@@ -1023,15 +1023,6 @@ to-report add-spaces [astring]
 end
 
 
-to show-model-entities-of-type [amodel a-type]
-  clear-output
-  output-print (word "Model " amodel " has the following " a-type "s:\n")
-  foreach model-entities amodel [
-    if table:get last ? "type" = a-type [
-      output-print (word first ? ", arguments: " table:get last ? "args")
-    ]
-  ]
-end
 
 to show-relationships
   clear-output
@@ -1044,7 +1035,7 @@ to-report type-of [an-entity]
   report table:get an-entity "type"
 end
 
-
+;; run-task is for reporter tasks
 to-report run-task [the-entity actuals]
   let the-task get-task the-entity
   if (is-reporter-task? the-task)
@@ -1056,16 +1047,11 @@ to-report run-task [the-entity actuals]
   ]
 end
 
-
-to do-task [entity-name actuals]
-  
+;; do task is for command tasks
+to do-task [entity-name actuals]  
   let the-entity entity entity-name
   let the-task get-task the-entity
   (run the-task actuals)
-end
-
-to test-a-var [avar]
-  
 end
 
 to reset-gui
@@ -1123,9 +1109,7 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ;; @todo: we need a dropdown for this
   
   let the-type current-type
-    
-
-    
+        
   let the-entity 0
   let code-worked? true
   carefully [
@@ -1169,33 +1153,6 @@ to new-entity-from-widget [a-widget-name]
 end
 
 
-to-report is-task-right-type? [a-task]
-  if xw:get "data-types" = "Commands"[
-    ifelse is-command-task? a-task[
-      report true
-    ]
-    [
-      report false
-    ]
-  ]
-  if xw:get "data-types" = "Reporters"[
-    ifelse is-reporter-task? a-task [
-      report true
-    ]
-    [
-      report false
-    ]
-  ]
-  if xw:get "data-types" = "Extended Agents"[
-    ifelse is-agentset? run-result a-task [
-      report true
-    ]
-    [
-      report false
-    ]
-  ]
-end
-
 to-report entity-from-id [an-id]
   report table:get tasks an-id
 end
@@ -1204,9 +1161,6 @@ to-report name-of [a-table]
   report table:get a-table "name"
 end
 
-to gui-delete-by-id [  ]
-  
-end
 
 to-report all-model-entities [model-id]
   report filter [table:get last ? "model" = model-id] table:to-list tasks 
