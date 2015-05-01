@@ -628,19 +628,21 @@ end
 
 
 to load-and-setup-model [model-path]
-  let the-model 0
-  (ls:load-gui-model model-path [set the-model ?])
-  ;; add the observer of the model
-  add-observer the-model
-  ;; add all a models procedures
-  add-model-procedures the-model
-  ;; and globals
-  add-model-globals the-model
-  ;; and breeds
-  add-model-breeds the-model
-  ;; and breed variables
-  add-model-breed-vars the-model
-  reset-gui
+  if is-string? model-path [
+    let the-model 0
+    (ls:load-gui-model model-path [set the-model ?])
+    ;; add the observer of the model
+    add-observer the-model
+    ;; add all a models procedures
+    add-model-procedures the-model
+    ;; and globals
+    add-model-globals the-model
+    ;; and breeds
+    add-model-breeds the-model
+    ;; and breed variables
+    add-model-breed-vars the-model
+    reset-gui
+  ]
 end
 
 to add-observer [the-model]
