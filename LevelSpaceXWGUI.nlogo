@@ -1012,7 +1012,7 @@ end
 to-report add-spaces [astring]
   let sb []
   foreach string:to-list astring [
-    ifelse ? = "[" or ? = "]"[
+    ifelse ? = "[" or ? = "]" or ? = ")" or ? = "(" [
       set sb lput (word " " ? " " ) sb
     ]
     [
@@ -1123,6 +1123,8 @@ to existing-entity-from-widget [a-widget-name entity-id]
   ;; @todo: we need a dropdown for this
   
   let the-type current-type
+    
+
     
   let the-entity 0
   let code-worked? true
