@@ -339,17 +339,17 @@ to save-relationship-from-gui [a-widget]
 end
 
 
-
+; AH: ATTENTION BRYAN, this is where we need to deal with wrapping literals in tasks
 to-report actuals-from-item-tuples [the-entity list-of-var-item-tuples]
   ;; we get a list of tuples, e.g. [["m" 0] ["n" 0]] ["name" item]. We need to turn that into a list of tasks
   let ids-of-eligible-args map [first ?] get-eligible-arguments the-entity
   let ids-of-actuals []
   foreach list-of-var-item-tuples [
+    ;; AH: if (last ?) = -1, it is a literal.
     ;; get the id at the position of the selected item from the dropdown
     let the-actual-id item (last ?) ids-of-eligible-args
     set ids-of-actuals lput the-actual-id ids-of-actuals
   ]
-    show (word "acting actuals: " ids-of-actuals)
   report map [get-task entity-from-id ?] ids-of-actuals
 end
 
