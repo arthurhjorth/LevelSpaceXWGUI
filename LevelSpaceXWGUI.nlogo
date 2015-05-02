@@ -739,10 +739,10 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
       ; this works: let command-task get-task entity "add n co2" let energy-task ls:report 1 "task [energy]" ask run-task "red sheep"[] [let my-energy runresult energy-task (run command-task (list my-energy))]      
       let the-task task[
         let command-task get-task second-entity
-        let the-agents (runresult get-task first-entity [])
+        let the-agents (runresult get-task first-entity (map [(runresult ? [])] ent1args))
         show first-entity
         ask the-agents [
-          (run command-task map [runresult ?] ent2args)
+          (run command-task map [(runresult ? [])] ent2args)
         ]        
       ]
       report the-task 
