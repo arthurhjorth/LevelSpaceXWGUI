@@ -335,6 +335,8 @@ to save-relationship-from-gui [a-widget]
   let acting-args get-args acting-entity
   let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
   let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
+  
+  show (word "acting args: " acting-args)
 
   let command-args get-args command-entity
   let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
@@ -348,11 +350,18 @@ to save-relationship-from-gui [a-widget]
   let relationship-type xw:get "setup-or-go"
   
   
-  ;; Ah: THis is dangerous if people delete entities. We should not be doing it like this:
+  ;; Ah: THis is dangerous if people delete entities. We should not be doing it like this.
   ;; Also add agent and command arg-indices
   table:put the-relationship "agent-arg-indices" agent-arg-items
   table:put the-relationship "command-arg-indices" command-arg-items
   
+  
+  ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
+  let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
+  let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
+  
+  table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
+  table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   table:put the-table relationship-counter the-relationship
   set relationship-counter relationship-counter + 1
@@ -1346,6 +1355,10 @@ to-report selected-agent-entity-from-relationship-widget [awidget]
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
   report entity-from-id acting-entity-id
+end
+
+to-report arg-from-entity-and-index [an-entity index]
+  report item index (map [first ? ] get-eligible-arguments an-entity)
 end
 
 
