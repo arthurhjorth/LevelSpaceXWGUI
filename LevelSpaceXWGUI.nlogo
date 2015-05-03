@@ -236,8 +236,11 @@ to draw-center
         ;; entity ids and set the drop down menu to that same item
         let command-item command-item-from-agent-and-command-id agent-id command-id
         xw:set-selected-procedure-index command-item
-
-        xw:set-selected-procedure-argument-indices table:get the-entity "command-arg-indices"
+        
+        ;; set the available command args
+        update-command-args temp-widget-name
+        let command-arg-indices table:get the-entity "command-arg-indices"
+        xw:set-selected-procedure-argument-indices command-arg-indices
 
       ifelse xw:get "setup-or-go" = "Go"[
         xw:set-delete-command (word "delete-relationship" " " widget-name " draw-center")
@@ -270,7 +273,7 @@ to update-command-args [a-relationship-widget]
   ;; so that we can get the command entity-id (because agent disambiguates that)
   let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
   ;; finally get the args  
-  xw:set-available-agentset-arguments get-arg-tuples command-entity-id
+  xw:set-available-procedure-arguments get-arg-tuples command-entity-id
   ]
 end
 
@@ -343,6 +346,9 @@ to save-relationship-from-gui [a-widget]
   let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
   ;; and now add it to the right place
   let relationship-type xw:get "setup-or-go"
+  
+  
+  ;; Ah: THis is dangerous if people delete entities. We should not be doing it like this:
   ;; Also add agent and command arg-indices
   table:put the-relationship "agent-arg-indices" agent-arg-items
   table:put the-relationship "command-arg-indices" command-arg-items
@@ -1395,7 +1401,7 @@ to load-task [a-table]
 ; to-report new-entity [name model task-string args the-type permitted-contexts]    
   let the-entity new-entity the-name model-id string args the-type contexts
   table:put the-entity "visible" true
-  table:put the-entity "builtin" true
+  table:put the-entity "builtin" table:get a-table "builtin"
   add-entity the-entity  
 end
 
@@ -1416,8 +1422,6 @@ to load-model [apath]
   table:put observer-entity "builtin" true
   table:put observer-entity "path" apath
   add-entity observer-entity
-  
-  
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
