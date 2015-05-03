@@ -52,6 +52,7 @@ to setup
   table:put observer-entity "name" "LevelSpace"
   table:put observer-entity "builtin" true
   table:put observer-entity "visible" true
+  table:put observer-entity "path" "none"
   add-entity observer-entity
   
   
@@ -642,7 +643,7 @@ to load-and-setup-model [model-path]
   let the-model 0
   (ls:load-gui-model model-path [set the-model ?])
   ;; add the observer of the model
-  add-observer the-model
+  add-observer the-model model-path
   ;; add all a models procedures
   add-model-procedures the-model
   ;; and globals
@@ -654,7 +655,7 @@ to load-and-setup-model [model-path]
   reset-gui
 end
 
-to add-observer [the-model]
+to add-observer [the-model model-path]
   let name (word the-model ":" ls:name-of the-model)
   let the-type "observer"
   ;; observers are different so we just manually create them here 
@@ -666,6 +667,7 @@ to add-observer [the-model]
   table:put observer-entity "name" name
   table:put observer-entity "visible" true
   table:put observer-entity "builtin" true
+  table:put observer-entity "path" model-path
   add-entity observer-entity
   
 end
