@@ -124,7 +124,8 @@ to draw-aux-buttons
       xw:set-units "ms"
       xw:set-maximum 1000
       xw:set-value 300
-       xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-increment 100
+      xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 150
       xw:set-width 200
     ]
