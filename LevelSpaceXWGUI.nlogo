@@ -321,11 +321,15 @@ to save-relationship-from-gui [a-widget]
   
   let acting-args get-args acting-entity
   let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
-  let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
+  let agent-arg-indices map last agent-arg-items
+  let agent-arg-values map last [xw:selected-agentset-arguments] xw:of a-widget
+  let acting-actuals actuals-from-item-tuples acting-entity agent-arg-indices agent-arg-values
 
   let command-args get-args command-entity
-  let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
-  let command-actuals actuals-from-item-tuples command-entity command-arg-items
+  let command-arg-items [xw:selected-procedure-argument-indices] xw:of a-widget
+  let command-arg-indices map last command-arg-items
+  let command-arg-values map last [xw:selected-procedure-arguments] xw:of a-widget
+  let command-actuals actuals-from-item-tuples command-entity command-arg-indices command-arg-values
   
   ;;Now  get the interaction-task between these two
   let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
@@ -343,18 +347,15 @@ to save-relationship-from-gui [a-widget]
 end
 
 
-; AH: ATTENTION BRYAN, this is where we need to deal with wrapping literals in tasks
-to-report actuals-from-item-tuples [the-entity list-of-var-item-tuples]
-  ;; we get a list of tuples, e.g. [["m" 0] ["n" 0]] ["name" item]. We need to turn that into a list of tasks
+to-report actuals-from-item-tuples [the-entity arg-indices arg-values]
   let ids-of-eligible-args map [first ?] get-eligible-arguments the-entity
-  let ids-of-actuals []
-  foreach list-of-var-item-tuples [
-    ;; AH: if (last ?) = -1, it is a literal.
-    ;; get the id at the position of the selected item from the dropdown
-    let the-actual-id item (last ?) ids-of-eligible-args
-    set ids-of-actuals lput the-actual-id ids-of-actuals
-  ]
-  report map [get-task entity-from-id ?] ids-of-actuals
+  report (map [
+    ifelse-value (?1 < 0) [
+      task [ read-from-string ?2 ] ;; Less than 0 index means it's a literal
+    ] [
+      get-task entity-from-id (item ?1 ids-of-eligible-args)
+    ]
+  ] arg-indices arg-values)
 end
 
 to draw-entity-lister
