@@ -75,7 +75,8 @@ to setup
   setup-notebook
   
   ;; for testing. take this out
-  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+;  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+reset-gui
   reset-ticks
 end
 
@@ -1311,23 +1312,6 @@ to move-down [a-relationship-id]
   ]
 end
 
-to save
-  if file-exists? "levelspace_save_test" [file-delete "levelspace_save_test.txt"]
-  file-open "levelspace_save_test.txt"
-  foreach table:to-list tasks [
-    file-print (list first ? table:to-list last ?) 
-  ]
-  file-close-all
-end
-
-to load
-  file-open "levelspace_save_test.txt"
-  while [not file-at-end?][
-    print file-read-line
-  ]
-  file-close-all
-end
-
 to-report agent-entity-id-from-item [item-id]
   ;; first get all the agents
   let agent-entity-ids map [first ? ] all-agent-entities
@@ -1356,6 +1340,84 @@ to-report selected-agent-entity-from-relationship-widget [awidget]
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
   report entity-from-id acting-entity-id
+end
+
+
+to save
+  file-close-all
+  if file-exists? "levelspace_save_test.txt" [file-delete "levelspace_save_test.txt"]
+  file-open "levelspace_save_test.txt"
+  let print-list []
+  foreach table:to-list tasks [
+    let the-table last ?
+    table:remove the-table "to-task"
+    set print-list lput (list first ? table:to-list the-table) print-list
+    show print-list
+  ]
+  file-write print-list
+  file-close-all
+end
+
+to load
+  file-open "levelspace_save_test.txt"
+  show "hep"
+  while [not file-at-end?][
+    ;; get a list
+    let the-input file-read-line
+
+    set the-input runresult the-input
+    foreach the-input [
+      ;; as long as we do things in the order they appear in, we won't skip any interdependencies
+      let the-task table:from-list last ?
+      let the-type table:get the-task  "type"
+      if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
+        load-model table:get the-task "path"
+      ]
+      if the-type = "command" or the-type = "agentset" or the-type = "value" [
+        load-task the-task
+      ]
+
+    ]
+    
+  ]
+  file-close-all
+end
+
+to load-task [a-table]
+  let the-name table:get a-table "name"
+  let model-id table:get a-table "model"
+  let string table:get a-table "to-string"
+  let args table:get a-table "args"
+  let the-type table:get a-table "type"
+  let contexts table:get a-table "contexts"
+  let visible table:get a-table "visible"
+  let builtin table:get a-table "builtin"
+; to-report new-entity [name model task-string args the-type permitted-contexts]    
+  let the-entity new-entity the-name model-id string args the-type contexts
+  table:put the-entity "visible" true
+  table:put the-entity "builtin" true
+  add-entity the-entity  
+end
+
+;; AH: this procedure is only used when we load from a saved file. It is different from load-and-setup-model in that 
+;; we don't create any other entities than the observer entity
+to load-model [apath]
+  let the-model 0
+  (ls:load-gui-model apath [set the-model ?])
+  let name (word the-model ":" ls:name-of the-model)
+  ;; observers are different so we just manually create them here 
+  let observer-entity table:make
+  table:put observer-entity "to-string" name
+  table:put observer-entity "model" the-model
+  table:put observer-entity "type" "observer"
+  table:put observer-entity "args" []
+  table:put observer-entity "name" name
+  table:put observer-entity "visible" true
+  table:put observer-entity "builtin" true
+  table:put observer-entity "path" apath
+  add-entity observer-entity
+  
+  
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
