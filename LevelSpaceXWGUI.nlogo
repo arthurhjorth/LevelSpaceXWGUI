@@ -169,7 +169,7 @@ to draw-center
       xw:set-width left-column-width
       xw:set-x margin * 2 + left-column-width
       xw:set-height 250
-      xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+      xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities      
       xw:set-available-procedures []
       xw:set-selected-agent-reporter-index 0
       xw:on-selected-agent-reporter-change [
@@ -204,8 +204,8 @@ to draw-center
         set center-column lput (word first ?) center-column            
         xw:set-x margin * 2 + left-column-width
         xw:set-height 150
-;        xw:set-available-agent-reporters map [(word first ? ":" name-of last ?)] all-agent-entities
-        xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+        xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities
+;        xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
 
         ;; AH: this needs to be fixed. It should NOT set it by name, but by index.
         xw:set-selected-agent-reporter-index agent-item-from-id agent-id
@@ -254,7 +254,7 @@ end
 to update-commands-in-gui [a-relationship-widget]
   xw:ask a-relationship-widget [
     let chosen-agent-entity selected-agent-entity-from-relationship-widget a-relationship-widget
-    xw:set-available-procedures map [name-of entity-from-id ? ] get-eligible-interactions chosen-agent-entity
+    xw:set-available-procedures map [(word table:get entity-from-id ? "model" ":" name-of entity-from-id ?) ] get-eligible-interactions chosen-agent-entity
   ]
 end
 
@@ -317,6 +317,7 @@ to save-relationship-from-gui [a-widget]
   let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-widget
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
+  show (word "index: " chosen-agent-item " agent-id: " acting-entity-id )
   let acting-entity entity-from-id acting-entity-id
   let acting-entity-name name-of acting-entity
   
@@ -678,7 +679,7 @@ to add-model-procedures [the-model]
     ;; procedures always have postfix argument, so this is easy: 
     repeat length args [set args-string (word args-string " ?")]
     let task-string string:lower-case  (word procedure-name  args-string)
-    let the-entity new-entity (word the-model "-" procedure-name) the-model task-string args the-type item 2 ?
+    let the-entity new-entity procedure-name the-model task-string args the-type item 2 ?
   table:put the-entity "visible" true
   table:put the-entity "builtin" true
     add-entity the-entity
@@ -693,7 +694,7 @@ to add-model-globals [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "value"
-    let the-entity new-entity (word the-model "-" global-name) the-model global-name args the-type "OTLP"
+    let the-entity new-entity global-name the-model global-name args the-type "OTLP"
     table:put the-entity "builtin" true
     add-entity the-entity
   ]
@@ -707,7 +708,7 @@ to add-model-breeds [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    let the-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    let the-entity new-entity agents the-model agents args the-type "OTLP"
     table:put the-entity "builtin" true
     add-entity the-entity
     
@@ -720,7 +721,7 @@ to add-model-breeds [the-model]
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
     let the-type "agentset"
-    let the-entity new-entity (word the-model "-" agents) the-model agents args the-type "OTLP"
+    let the-entity new-entity agents the-model agents args the-type "OTLP"
     table:put the-entity "builtin" true
     add-entity the-entity
     
