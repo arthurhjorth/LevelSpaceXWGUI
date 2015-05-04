@@ -592,7 +592,7 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   ;; special case tasks created in the LevelSpace/Metaverse or whatever stupid name Bryan insists on. <3 <3
   ifelse model = "x"
   [
-    table:put task-table "to-task" task [ run-result task-string ]
+    table:put task-table "task" task [ run-result task-string ]
   ]
   [
     let task-from-model ls:report model (word "task [ " task-string " ]") 
@@ -609,23 +609,23 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
     [
       ;; observer reproters here
       ifelse member? "O" permitted-contexts[
-        table:put task-table "to-task" task [(ls:report model task-string ?)]    
+        table:put task-table "task" task [(ls:report model task-string ?)]    
       ]
       ;; turtle reporters here
       [
-        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")  
+        table:put task-table "task" ls:report model (word "task [ " task-string " ]")  
       ]
     ]
     ;; or it is a command task\
     [
       ;; observer commands are command tasks that are compiled in the observer of the parent model,
       ifelse member? "O" permitted-contexts[
-        table:put task-table "to-task" task [(ls:ask model task-string ?)]
+        table:put task-table "task" task [(ls:ask model task-string ?)]
       ]
       ;; turtle commands here:
       [
         ;; turtle commands are tasks that are compiled in the context of the child model's observer
-        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")
+        table:put task-table "task" ls:report model (word "task [ " task-string " ]")
       ]
     ]
   ]
@@ -882,7 +882,7 @@ end
 
 ;;; accessing tasks and relationships
 to-report get-task [the-entity]
-  report table:get the-entity "to-task"
+  report table:get the-entity "task"
 end
 
 to-report get-string [the-entity]
@@ -1380,19 +1380,25 @@ to-report item-from-entity-and-id [an-entity id]
 end
 
 
-to save
+to write-list [atable afilename]
   file-close-all
-  if file-exists? "levelspace_save_test.txt" [file-delete "levelspace_save_test.txt"]
-  file-open "levelspace_save_test.txt"
+  if file-exists? afilename [file-delete afilename]
+  file-open afilename
   let print-list []
-  foreach table:to-list tasks [
+  foreach table:to-list atable  [
     let the-table last ?
-    table:remove the-table "to-task"
+    table:remove the-table "task"
     set print-list lput (list first ? table:to-list the-table) print-list
     show print-list
   ]
   file-write print-list
   file-close-all
+end
+
+to save
+  write-list tasks "levelspace_tasks.txt"
+  write-list relationships "levelspace_go_rel.txt"
+  write-list setup-relationships "levelspace_setup_rel.txt"
 end
 
 to load
