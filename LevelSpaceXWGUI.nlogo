@@ -133,11 +133,27 @@ to draw-aux-buttons
     ]
      
      
+
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
       xw:set-x (margin * 3) + (left-column-width * 2)
-      xw:set-y margin + 220
+      xw:set-y margin + 200
+      xw:set-width 200
+    ]
+
+    xw:create-button "save-work" [
+      xw:set-label "Save Model"
+      xw:set-commands "save"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 250
+      xw:set-width 200
+    ]
+    xw:create-button "load-work" [
+      xw:set-label "Load Saved Model"
+      xw:set-commands "load"
+      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-y margin + 300
       xw:set-width 200
     ]
     
@@ -1415,7 +1431,6 @@ to load
     let the-input file-read-line
     set the-input runresult the-input
     foreach the-input [
-      show ?
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
       let the-id first ?
       let the-task table:from-list last ?
