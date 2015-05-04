@@ -207,14 +207,31 @@ to draw-center
         xw:set-x margin * 2 + left-column-width
         xw:set-height 150
         xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities
-;        xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+        
+        
+        
+        
+        ;; in order to set the indices, we need to turn our list of tuples of varname->entity-id into a 
+        ;; list of tuples of varname->item.
+;        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
 
-        ;; AH: this needs to be fixed. It should NOT set it by name, but by index.
+
+        ;; AH: we find the dropdown index and set it for agents
         xw:set-selected-agent-reporter-index agent-item-from-id agent-id
-
+        ;; we then update the commands and the agent arts
         update-commands-in-gui widget-name
         update-agent-args widget-name
-        xw:set-selected-agentset-argument-indices table:get the-entity "agent-arg-indices"
+        
+        ;; at that point we can set the agent arg indices because the agent args are in the dropdowns (        "command-arg-id-tuples")
+        let agent-arg-id-tuples table:get the-entity "agent-arg-id-tuples"
+        let agent-arg-item-tuples map [(list (first ?) (arg-from-entity-and-index entity-from-id table:get the-entity "agent-id" last ?))] agent-arg-id-tuples
+        xw:set-selected-agentset-argument-indices agent-arg-item-tuples 
+              
+;        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
+;        let command-arg-item-tuples map [(list (first ?) (arg-from-entity-and-index entity-from-id table:get the-entity "command-id" last ?))] command-arg-id-tuples
+        
+        
+
         let temp-widget-name widget-name
         xw:set-up-command (word "move-up " first ? " draw-center")
         xw:set-down-command (word "move-down " first ? " draw-center")
