@@ -52,6 +52,7 @@ to setup
   table:put observer-entity "name" "LevelSpace"
   table:put observer-entity "builtin" true
   table:put observer-entity "visible" true
+  table:put observer-entity "path" "none"
   add-entity observer-entity
   
   
@@ -74,7 +75,8 @@ to setup
   setup-notebook
   
   ;; for testing. take this out
-  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+
+reset-gui
   reset-ticks
 end
 
@@ -206,14 +208,23 @@ to draw-center
         xw:set-x margin * 2 + left-column-width
         xw:set-height 150
         xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities
-;        xw:set-available-agent-reporters map [name-of last ?] all-agent-entities
+        
+        
+        
+        
+        ;; in order to set the indices, we need to turn our list of tuples of varname->entity-id into a 
+        ;; list of tuples of varname->item.
+;        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
 
-        ;; AH: this needs to be fixed. It should NOT set it by name, but by index.
+
+        ;; AH: we find the dropdown index and set it for agents
         xw:set-selected-agent-reporter-index agent-item-from-id agent-id
-
+        ;; we then update the commands and the agent arts
         update-commands-in-gui widget-name
         update-agent-args widget-name
-        xw:set-selected-agentset-argument-indices table:get the-entity "agent-arg-indices"
+        
+        
+
         let temp-widget-name widget-name
         xw:set-up-command (word "move-up " first ? " draw-center")
         xw:set-down-command (word "move-down " first ? " draw-center")
@@ -229,14 +240,23 @@ to draw-center
           update-command-args temp-widget-name
 
         ]
-        ;; OK this doesn't work. Instead we need to find the item no. We need to find a way of finding the item number in the 
-        ;; command dropdown. It should be possible because knowing the chosen agent can give us a list of entity-ids (same list
-        ;; that populates the dropdown) and since we know the entity id of the command we just find the position in the list of 
-        ;; entity ids and set the drop down menu to that same item
+        ;; AH: We are finding the item and then setting the procedure/command entity
         let command-item command-item-from-agent-and-command-id agent-id command-id
         xw:set-selected-procedure-index command-item
+        
+        ;; set the available command args
+        update-command-args temp-widget-name
 
-        xw:set-selected-procedure-argument-indices table:get the-entity "command-arg-indices"
+        ;; and finally set the selected args for both agents and procedures
+        ;; at that point we can set the agent arg indices because the agent args are in the dropdowns (        "command-arg-id-tuples")
+        let agent-arg-id-tuples table:get the-entity "agent-arg-id-tuples"
+        let agent-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "agent-id" last ?))] agent-arg-id-tuples
+        xw:set-selected-agentset-argument-indices agent-arg-item-tuples
+              
+        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
+        let command-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "command-id" last ?))] command-arg-id-tuples
+        xw:set-selected-procedure-argument-indices command-arg-item-tuples
+        
 
       ifelse xw:get "setup-or-go" = "Go"[
         xw:set-delete-command (word "delete-relationship" " " widget-name " draw-center")
@@ -269,7 +289,7 @@ to update-command-args [a-relationship-widget]
   ;; so that we can get the command entity-id (because agent disambiguates that)
   let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
   ;; finally get the args  
-  xw:set-available-agentset-arguments get-arg-tuples command-entity-id
+  xw:set-available-procedure-arguments get-arg-tuples command-entity-id
   ]
 end
 
@@ -318,7 +338,6 @@ to save-relationship-from-gui [a-widget]
   let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-widget
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
-  show (word "index: " chosen-agent-item " agent-id: " acting-entity-id )
   let acting-entity entity-from-id acting-entity-id
   let acting-entity-name name-of acting-entity
   
@@ -331,21 +350,24 @@ to save-relationship-from-gui [a-widget]
   let acting-args get-args acting-entity
   let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
   let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
-
+  
   let command-args get-args command-entity
   let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
   let command-actuals actuals-from-item-tuples command-entity command-arg-items
   
   ;;Now  get the interaction-task between these two
-  let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
+  let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
   ;; and create a relationship (a table with all the info we want )
   let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
   ;; and now add it to the right place
-  let relationship-type xw:get "setup-or-go"
-  ;; Also add agent and command arg-indices
-  table:put the-relationship "agent-arg-indices" agent-arg-items
-  table:put the-relationship "command-arg-indices" command-arg-items
+  let relationship-type xw:get "setup-or-go"  
+
+  ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
+  let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
+  let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
   
+  table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
+  table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   table:put the-table relationship-counter the-relationship
   set relationship-counter relationship-counter + 1
@@ -562,7 +584,7 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   ;; special case tasks created in the LevelSpace/Metaverse or whatever stupid name Bryan insists on. <3 <3
   ifelse model = "x"
   [
-    table:put task-table "to-task" task [ run-result task-string ]
+    table:put task-table "task" task [ run-result task-string ]
   ]
   [
     let task-from-model ls:report model (word "task [ " task-string " ]") 
@@ -579,23 +601,23 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
     [
       ;; observer reproters here
       ifelse member? "O" permitted-contexts[
-        table:put task-table "to-task" task [(ls:report model task-string ?)]    
+        table:put task-table "task" task [(ls:report model task-string ?)]    
       ]
       ;; turtle reporters here
       [
-        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")  
+        table:put task-table "task" ls:report model (word "task [ " task-string " ]")  
       ]
     ]
     ;; or it is a command task\
     [
       ;; observer commands are command tasks that are compiled in the observer of the parent model,
       ifelse member? "O" permitted-contexts[
-        table:put task-table "to-task" task [(ls:ask model task-string ?)]
+        table:put task-table "task" task [(ls:ask model task-string ?)]
       ]
       ;; turtle commands here:
       [
         ;; turtle commands are tasks that are compiled in the context of the child model's observer
-        table:put task-table "to-task" ls:report model (word "task [ " task-string " ]")
+        table:put task-table "task" ls:report model (word "task [ " task-string " ]")
       ]
     ]
   ]
@@ -643,7 +665,7 @@ to load-and-setup-model [model-path]
   let the-model 0
   (ls:load-gui-model model-path [set the-model ?])
   ;; add the observer of the model
-  add-observer the-model
+  add-observer the-model model-path
   ;; add all a models procedures
   add-model-procedures the-model
   ;; and globals
@@ -655,7 +677,7 @@ to load-and-setup-model [model-path]
   reset-gui
 end
 
-to add-observer [the-model]
+to add-observer [the-model model-path]
   let name (word the-model ":" ls:name-of the-model)
   let the-type "observer"
   ;; observers are different so we just manually create them here 
@@ -667,6 +689,7 @@ to add-observer [the-model]
   table:put observer-entity "name" name
   table:put observer-entity "visible" true
   table:put observer-entity "builtin" true
+  table:put observer-entity "path" model-path
   add-entity observer-entity
   
 end
@@ -737,8 +760,8 @@ to-report tasks-with [afilter]
 end
 
 to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
-  let first-entity entity entity1 
-  let second-entity entity entity2
+  let first-entity entity-from-id entity1 
+  let second-entity entity-from-id entity2
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
   
@@ -750,7 +773,6 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
       let the-task task[
         let command-task get-task second-entity
         let the-agents (runresult get-task first-entity [])
-        show first-entity
         ask the-agents [
           (run command-task map [runresult ?] ent2args)
         ]        
@@ -851,7 +873,7 @@ end
 
 ;;; accessing tasks and relationships
 to-report get-task [the-entity]
-  report table:get the-entity "to-task"
+  report table:get the-entity "task"
 end
 
 to-report get-string [the-entity]
@@ -888,6 +910,12 @@ end
 
 to add-entity [atask-table]
   table:put tasks entity-serial atask-table
+  set entity-serial entity-serial + 1
+end
+
+;; We use this for loading old stuff to ensure ids match
+to add-entity-with-id [atask-table an-id]
+  table:put tasks an-id atask-table
   set entity-serial entity-serial + 1
 end
 
@@ -1310,23 +1338,6 @@ to move-down [a-relationship-id]
   ]
 end
 
-to save
-  if file-exists? "levelspace_save_test" [file-delete "levelspace_save_test.txt"]
-  file-open "levelspace_save_test.txt"
-  foreach table:to-list tasks [
-    file-print (list first ? table:to-list last ?) 
-  ]
-  file-close-all
-end
-
-to load
-  file-open "levelspace_save_test.txt"
-  while [not file-at-end?][
-    print file-read-line
-  ]
-  file-close-all
-end
-
 to-report agent-entity-id-from-item [item-id]
   ;; first get all the agents
   let agent-entity-ids map [first ? ] all-agent-entities
@@ -1355,6 +1366,153 @@ to-report selected-agent-entity-from-relationship-widget [awidget]
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
   report entity-from-id acting-entity-id
+end
+
+to-report arg-from-entity-and-index [an-entity index]
+  report item index (map [first ? ] get-eligible-arguments an-entity)
+end
+
+to-report item-from-entity-and-id [an-entity id]
+    report position id (map [first ? ] get-eligible-arguments an-entity)
+end
+
+
+to write-list [atable afilename]
+  file-close-all
+  if file-exists? afilename [file-delete afilename]
+  file-open afilename
+  let print-list []
+  foreach table:to-list atable  [
+    let the-table last ?
+;    table:remove the-table "task" ;; AH: this removes it from the actual table. that doesn't work. we can just ignore it in the saved list
+;; so we "clone" it by turning into a list, then into a table, remove it, and then into a list for printing
+    let clone-list table:to-list the-table
+    let clone-table table:from-list clone-list
+;    if member? "task" table:keys clone-table [show "before: " show clone-table table:remove clone-table "task" show "after:" show clone-table]
+    table:remove clone-table "task"
+    table:remove clone-table "agent-actuals"
+    table:remove clone-table "command-actuals"
+    set print-list lput (list first ? table:to-list clone-table) print-list
+  ]
+  file-write print-list
+  file-close-all
+end
+
+to save
+  write-list tasks "levelspace_tasks.txt"
+  write-list relationships "levelspace_go_rel.txt"
+  write-list setup-relationships "levelspace_setup_rel.txt"
+end
+
+to load
+  ;; first call setup to reset everything
+  setup
+  
+  ;; open models and create entities first
+  file-open "levelspace_tasks.txt"
+  while [not file-at-end?][
+    ;; get a list
+    let the-input file-read-line
+    set the-input runresult the-input
+    foreach the-input [
+      show ?
+      ;; as long as we do things in the order they appear in, we won't skip any interdependencies
+      let the-id first ?
+      let the-task table:from-list last ?
+      let the-type table:get the-task  "type"
+      if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
+        load-model table:get the-task "path" the-id
+      ]
+      if the-type = "command" or the-type = "agentset" or the-type = "value" [
+        load-task the-task the-id
+      ]
+    ]
+  ]
+  file-close-all
+  ;; then create relationships
+   foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
+   [
+     let relationship-type 0
+    if ? =  "levelspace_go_rel.txt" [ set relationship-type "Setup"]
+    if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Go"]
+     
+     
+     file-open ?
+     while [not file-at-end?][
+       ;; get a list
+       let the-input file-read-line
+       set the-input runresult the-input
+       foreach the-input [
+         let the-id first ?
+         let the-table table:from-list last ?
+
+         ;;Now  get the interaction-task between these two
+         ;; actuals here are a list of tasks, so we first get the tasks from 
+         let acting-entity-id table:get the-table "agent-id"
+         let acting-entity entity-from-id acting-entity-id
+         let command-entity-id table:get the-table "command-id"
+         let command-entity entity-from-id command-entity-id
+         
+         let acting-arg-ids table:get the-table "agent-arg-id-tuples"
+         let acting-actuals map [get-task entity-from-id last ?] acting-arg-ids
+
+         let command-arg-ids table:get the-table "command-arg-id-tuples"
+         let command-actuals map [get-task entity-from-id last ?] command-arg-ids
+         
+         let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
+
+;         ;; and create a relationship (a table with all the info we want )
+         let the-relationship add-relationship ls-task (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
+         
+         ;; and now save the arg-id tupes
+
+         table:put the-relationship "command-arg-id-tuples" command-arg-ids
+         table:put the-relationship "agent-arg-id-tuples" acting-arg-ids
+         let the-relationship-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
+         table:put the-relationship-table the-id the-relationship
+       ]
+     ]     
+   ]
+   
+   ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
+   set entity-serial (max map [first ?] table:to-list tasks) + 1
+   set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
+   
+end
+
+to load-task [a-table the-id]
+  let the-name table:get a-table "name"
+  let model-id table:get a-table "model"
+  let string table:get a-table "to-string"
+  let args table:get a-table "args"
+  let the-type table:get a-table "type"
+  let contexts table:get a-table "contexts"
+  let visible table:get a-table "visible"
+  let builtin table:get a-table "builtin"
+; to-report new-entity [name model task-string args the-type permitted-contexts]    
+  let the-entity new-entity the-name model-id string args the-type contexts
+  table:put the-entity "visible" true
+  table:put the-entity "builtin" table:get a-table "builtin"
+  add-entity-with-id the-entity the-id
+end
+
+;; AH: this procedure is only used when we load from a saved file. It is different from load-and-setup-model in that 
+;; we don't create any other entities than the observer entity
+to load-model [apath the-id]
+  let the-model 0
+  (ls:load-gui-model apath [set the-model ?])
+  let name (word the-model ":" ls:name-of the-model)
+  ;; observers are different so we just manually create them here 
+  let observer-entity table:make
+  table:put observer-entity "to-string" name
+  table:put observer-entity "model" the-model
+  table:put observer-entity "type" "observer"
+  table:put observer-entity "args" []
+  table:put observer-entity "name" name
+  table:put observer-entity "visible" true
+  table:put observer-entity "builtin" true
+  table:put observer-entity "path" apath
+  add-entity-with-id observer-entity the-id
 end
 @#$#@#$#@
 GRAPHICS-WINDOW

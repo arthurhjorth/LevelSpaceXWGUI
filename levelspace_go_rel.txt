@@ -1,0 +1,1 @@
+ [[2 [["agent-name" "0:Wolf Sheep Predation.nlogo"] ["agent-id" 1] ["command-name" "go"] ["command-id" 2] ["command-arg-names" []] ["agent-arg-names" []] ["command-arg-id-tuples" []] ["agent-arg-id-tuples" []]]]]
