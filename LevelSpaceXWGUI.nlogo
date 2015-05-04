@@ -1558,15 +1558,6 @@ ticks
 1.0
 
 @#$#@#$#@
-## notes
-if a learner constructs a boolean reporter, they can create 'if' scenarios. 
-
-
-
-this works
-let atask ls:report 1 "task [move]" ask ls:report 1 "sheep" [run atask]
-but 
-let atask get-task entity "1-MOVE"
 @#$#@#$#@
 default
 true
