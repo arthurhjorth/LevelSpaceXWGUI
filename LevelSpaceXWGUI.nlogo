@@ -75,7 +75,7 @@ to setup
   setup-notebook
   
   ;; for testing. take this out
-;  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+  load-and-setup-model "Wolf Sheep Predation.nlogo" 
 reset-gui
   reset-ticks
 end
@@ -222,14 +222,6 @@ to draw-center
         update-commands-in-gui widget-name
         update-agent-args widget-name
         
-        ;; at that point we can set the agent arg indices because the agent args are in the dropdowns (        "command-arg-id-tuples")
-        let agent-arg-id-tuples table:get the-entity "agent-arg-id-tuples"
-        let agent-arg-item-tuples map [(list (first ?) (arg-from-entity-and-index entity-from-id table:get the-entity "agent-id" last ?))] agent-arg-id-tuples
-        xw:set-selected-agentset-argument-indices agent-arg-item-tuples 
-              
-;        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
-;        let command-arg-item-tuples map [(list (first ?) (arg-from-entity-and-index entity-from-id table:get the-entity "command-id" last ?))] command-arg-id-tuples
-        
         
 
         let temp-widget-name widget-name
@@ -247,17 +239,23 @@ to draw-center
           update-command-args temp-widget-name
 
         ]
-        ;; OK this doesn't work. Instead we need to find the item no. We need to find a way of finding the item number in the 
-        ;; command dropdown. It should be possible because knowing the chosen agent can give us a list of entity-ids (same list
-        ;; that populates the dropdown) and since we know the entity id of the command we just find the position in the list of 
-        ;; entity ids and set the drop down menu to that same item
+        ;; AH: We are finding the item and then setting the procedure/command entity
         let command-item command-item-from-agent-and-command-id agent-id command-id
         xw:set-selected-procedure-index command-item
         
         ;; set the available command args
         update-command-args temp-widget-name
-        let command-arg-indices table:get the-entity "command-arg-indices"
-        xw:set-selected-procedure-argument-indices command-arg-indices
+
+        ;; and finally set the selected args for both agents and procedures
+        ;; at that point we can set the agent arg indices because the agent args are in the dropdowns (        "command-arg-id-tuples")
+        let agent-arg-id-tuples table:get the-entity "agent-arg-id-tuples"
+        let agent-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "agent-id" last ?))] agent-arg-id-tuples
+        xw:set-selected-agentset-argument-indices agent-arg-item-tuples
+              
+        let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
+        let command-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "command-id" last ?))] command-arg-id-tuples
+        xw:set-selected-procedure-argument-indices command-arg-item-tuples
+        
 
       ifelse xw:get "setup-or-go" = "Go"[
         xw:set-delete-command (word "delete-relationship" " " widget-name " draw-center")
@@ -339,7 +337,6 @@ to save-relationship-from-gui [a-widget]
   let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-widget
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
-  show (word "index: " chosen-agent-item " agent-id: " acting-entity-id )
   let acting-entity entity-from-id acting-entity-id
   let acting-entity-name name-of acting-entity
   
@@ -353,8 +350,6 @@ to save-relationship-from-gui [a-widget]
   let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
   let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
   
-  show (word "acting args: " acting-args)
-
   let command-args get-args command-entity
   let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
   let command-actuals actuals-from-item-tuples command-entity command-arg-items
@@ -372,10 +367,12 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-indices" agent-arg-items
   table:put the-relationship "command-arg-indices" command-arg-items
   
-  
+
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
   let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
   let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
+  show command-arg-items
+  show command-arg-id-tuples
   
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
@@ -1376,6 +1373,10 @@ end
 
 to-report arg-from-entity-and-index [an-entity index]
   report item index (map [first ? ] get-eligible-arguments an-entity)
+end
+
+to-report item-from-entity-and-id [an-entity id]
+    report position id (map [first ? ] get-eligible-arguments an-entity)
 end
 
 
