@@ -75,7 +75,7 @@ to setup
   setup-notebook
   
   ;; for testing. take this out
-  load-and-setup-model "Wolf Sheep Predation.nlogo" 
+
 reset-gui
   reset-ticks
 end
@@ -364,8 +364,6 @@ to save-relationship-from-gui [a-widget]
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
   let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
   let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
-  show command-arg-items
-  show command-arg-id-tuples
   
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
@@ -774,7 +772,6 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
       let the-task task[
         let command-task get-task second-entity
         let the-agents (runresult get-task first-entity [])
-        show first-entity
         ask the-agents [
           (run command-task map [runresult ?] ent2args)
         ]        
@@ -1386,8 +1383,15 @@ to write-list [atable afilename]
   let print-list []
   foreach table:to-list atable  [
     let the-table last ?
-    table:remove the-table "task"
-    set print-list lput (list first ? table:to-list the-table) print-list
+;    table:remove the-table "task" ;; AH: this removes it from the actual table. that doesn't work. we can just ignore it in the saved list
+;; so we "clone" it by turning into a list, then into a table, remove it, and then into a list for printing
+    let clone-list table:to-list the-table
+    let clone-table table:from-list clone-list
+;    if member? "task" table:keys clone-table [show "before: " show clone-table table:remove clone-table "task" show "after:" show clone-table]
+    table:remove clone-table "task"
+    table:remove clone-table "agent-actuals"
+    table:remove clone-table "command-actuals"
+    set print-list lput (list first ? table:to-list clone-table) print-list
   ]
   file-write print-list
   file-close-all
@@ -1400,15 +1404,19 @@ to save
 end
 
 to load
+  ;; first call setup to reset everything
+  setup
+  
   ;; open models and create entities first
-  file-open "levelspace_save_test.txt"
+  file-open "levelspace_tasks.txt"
   while [not file-at-end?][
     ;; get a list
     let the-input file-read-line
     set the-input runresult the-input
     foreach the-input [
+      show ?
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
-      let the-id table:from-list first ?
+      let the-id first ?
       let the-task table:from-list last ?
       let the-type table:get the-task  "type"
       if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
@@ -1423,7 +1431,9 @@ to load
   ;; then create relationships
    foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
    [
-     
+     let relationship-type 0
+    if ? =  "levelspace_go_rel.txt" [ set relationship-type "Setup"]
+    if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Go"]
      
      
      file-open ?
@@ -1433,35 +1443,39 @@ to load
        set the-input runresult the-input
        foreach the-input [
          let the-id first ?
-         let the-table last ?
+         let the-table table:from-list last ?
 
-;         ;; get the two tasks by first finding their entities, and then getting task
-;         let acting
-;         ;;Now  get the interaction-task between these two
-;         let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
+         ;;Now  get the interaction-task between these two
+         ;; actuals here are a list of tasks, so we first get the tasks from 
+         let acting-entity-id table:get the-table "agent-id"
+         let acting-entity entity-from-id acting-entity-id
+         let command-entity-id table:get the-table "command-id"
+         let command-entity entity-from-id command-entity-id
+         
+         let acting-arg-ids table:get the-table "agent-arg-id-tuples"
+         let acting-actuals map [get-task entity-from-id last ?] acting-arg-ids
+
+         let command-arg-ids table:get the-table "command-arg-id-tuples"
+         let command-actuals map [get-task entity-from-id last ?] command-arg-ids
+         
+         let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
+
 ;         ;; and create a relationship (a table with all the info we want )
-;         let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
-;         ;; and now add it to the right place
-;         let relationship-type xw:get "setup-or-go"  
-;         
-;         ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
-;         let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
-;         let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
-;         show command-arg-items
-;         show command-arg-id-tuples
-;         
-;         table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
-;         table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
-;         let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
-;         table:put the-table relationship-counter the-relationship
-;         set relationship-counter relationship-counter + 1
+         let the-relationship add-relationship ls-task (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
+         
+         ;; and now save the arg-id tupes
 
+         table:put the-relationship "command-arg-id-tuples" command-arg-ids
+         table:put the-relationship "agent-arg-id-tuples" acting-arg-ids
+         let the-relationship-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
+         table:put the-relationship-table the-id the-relationship
        ]
-     ]
-     
-     
-     
+     ]     
    ]
+   
+   ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
+   set entity-serial (max map [first ?] table:to-list tasks) + 1
+   set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
    
 end
 
