@@ -355,18 +355,11 @@ to save-relationship-from-gui [a-widget]
   let command-actuals actuals-from-item-tuples command-entity command-arg-items
   
   ;;Now  get the interaction-task between these two
-  let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
+  let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
   ;; and create a relationship (a table with all the info we want )
   let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
   ;; and now add it to the right place
-  let relationship-type xw:get "setup-or-go"
-  
-  
-  ;; Ah: THis is dangerous if people delete entities. We should not be doing it like this.
-  ;; Also add agent and command arg-indices
-  table:put the-relationship "agent-arg-indices" agent-arg-items
-  table:put the-relationship "command-arg-indices" command-arg-items
-  
+  let relationship-type xw:get "setup-or-go"  
 
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
   let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
@@ -768,8 +761,8 @@ to-report tasks-with [afilter]
 end
 
 to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
-  let first-entity entity entity1 
-  let second-entity entity entity2
+  let first-entity entity-from-id entity1 
+  let second-entity entity-from-id entity2
   let first-entity-type table:get first-entity "type"
   let second-entity-type table:get second-entity "type"
   
@@ -919,6 +912,12 @@ end
 
 to add-entity [atask-table]
   table:put tasks entity-serial atask-table
+  set entity-serial entity-serial + 1
+end
+
+;; We use this for loading old stuff to ensure ids match
+to add-entity-with-id [atask-table an-id]
+  table:put tasks an-id atask-table
   set entity-serial entity-serial + 1
 end
 
@@ -1389,7 +1388,6 @@ to write-list [atable afilename]
     let the-table last ?
     table:remove the-table "task"
     set print-list lput (list first ? table:to-list the-table) print-list
-    show print-list
   ]
   file-write print-list
   file-close-all
@@ -1402,31 +1400,72 @@ to save
 end
 
 to load
+  ;; open models and create entities first
   file-open "levelspace_save_test.txt"
-  show "hep"
   while [not file-at-end?][
     ;; get a list
     let the-input file-read-line
-
     set the-input runresult the-input
     foreach the-input [
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
+      let the-id table:from-list first ?
       let the-task table:from-list last ?
       let the-type table:get the-task  "type"
       if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
-        load-model table:get the-task "path"
+        load-model table:get the-task "path" the-id
       ]
       if the-type = "command" or the-type = "agentset" or the-type = "value" [
-        load-task the-task
+        load-task the-task the-id
       ]
-
     ]
-    
   ]
   file-close-all
+  ;; then create relationships
+   foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
+   [
+     
+     
+     
+     file-open ?
+     while [not file-at-end?][
+       ;; get a list
+       let the-input file-read-line
+       set the-input runresult the-input
+       foreach the-input [
+         let the-id first ?
+         let the-table last ?
+
+;         ;; get the two tasks by first finding their entities, and then getting task
+;         let acting
+;         ;;Now  get the interaction-task between these two
+;         let ls-task get-ls-task-between acting-entity-name acting-actuals command-entity-name command-actuals 
+;         ;; and create a relationship (a table with all the info we want )
+;         let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
+;         ;; and now add it to the right place
+;         let relationship-type xw:get "setup-or-go"  
+;         
+;         ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
+;         let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
+;         let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
+;         show command-arg-items
+;         show command-arg-id-tuples
+;         
+;         table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
+;         table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
+;         let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
+;         table:put the-table relationship-counter the-relationship
+;         set relationship-counter relationship-counter + 1
+
+       ]
+     ]
+     
+     
+     
+   ]
+   
 end
 
-to load-task [a-table]
+to load-task [a-table the-id]
   let the-name table:get a-table "name"
   let model-id table:get a-table "model"
   let string table:get a-table "to-string"
@@ -1439,12 +1478,12 @@ to load-task [a-table]
   let the-entity new-entity the-name model-id string args the-type contexts
   table:put the-entity "visible" true
   table:put the-entity "builtin" table:get a-table "builtin"
-  add-entity the-entity  
+  add-entity-with-id the-entity the-id
 end
 
 ;; AH: this procedure is only used when we load from a saved file. It is different from load-and-setup-model in that 
 ;; we don't create any other entities than the observer entity
-to load-model [apath]
+to load-model [apath the-id]
   let the-model 0
   (ls:load-gui-model apath [set the-model ?])
   let name (word the-model ":" ls:name-of the-model)
@@ -1458,7 +1497,7 @@ to load-model [apath]
   table:put observer-entity "visible" true
   table:put observer-entity "builtin" true
   table:put observer-entity "path" apath
-  add-entity observer-entity
+  add-entity-with-id observer-entity the-id
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
