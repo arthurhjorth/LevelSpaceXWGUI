@@ -1234,10 +1234,10 @@ to existing-entity-from-widget [a-widget-name entity-id]
   let code-worked? true
   carefully [
     set the-entity new-entity name model-id code args-list the-type "OTPL"
-  ]
-  [
+  ] [
     set code-worked? false
     xw:ask a-widget-name [xw:set-color red]
+    user-message error-message
   ]  
   if code-worked?
   [
@@ -1259,10 +1259,10 @@ to new-entity-from-widget [a-widget-name]
   let code-worked? true
   carefully [
     set the-entity new-entity name model-id code args-list the-type "OTPL"
-  ]
-  [
+  ] [
     set code-worked? false
     xw:ask "new thing" [xw:set-color red]
+    user-message error-message
   ]
   if code-worked?
   [  
