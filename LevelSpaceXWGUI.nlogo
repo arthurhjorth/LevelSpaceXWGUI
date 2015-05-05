@@ -128,14 +128,14 @@ to draw-aux-buttons
     ]
 
     xw:create-button "save-work" [
-      xw:set-label "Save Model"
+      xw:set-label "Save LevelSpace System"
       xw:set-commands "save"
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 250
       xw:set-width 200
     ]
     xw:create-button "load-work" [
-      xw:set-label "Load Saved Model"
+      xw:set-label "Load LevelSpace System"
       xw:set-commands "load"
       xw:set-x (margin * 3) + (left-column-width * 2)
       xw:set-y margin + 300
