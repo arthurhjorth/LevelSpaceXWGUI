@@ -1,4 +1,4 @@
-extensions [ls table string xw ]
+extensions [ls table string xw cf]
 __includes [ "notebook.nls" ]
 
 breed [models model]
@@ -382,7 +382,7 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
-  let rel-id 1 + max table:keys the-table
+  let rel-id 1 + max (fput -1 table:keys the-table)
   table:put the-table rel-id the-relationship
 end
 
@@ -564,15 +564,32 @@ to run-relationship [ rel-obj ]
   let agent-obj table:get tasks (table:get rel-obj "agent-id")
   let cmd-obj table:get tasks (table:get rel-obj "command-id")
   let cmd-model table:get cmd-obj "model"
-  let cmd-code make-variadic-task (table:get cmd-obj "to-string") (table:get cmd-obj "args")
-  if table:get agent-obj "type" = "agentset" [
-  ]
-  if table:get agent-obj "type" = "observer" [
-    (ls:ask cmd-model cmd-code [])
-  ]
+  
+  let agent-type table:get agent-obj "type"
+  let agent-model table:get agent-obj "model"
+  
+  (cf:match agent-type
+    cf:case [ ? = "observer" ] [
+      (ls:ask cmd-model (get-code cmd-obj 1) [])
+    ]
+    cf:case [? = "agentset" and agent-model = cmd-model] [
+      (ls:ask cmd-model (word "ask " (get-code agent-obj 1) " [ " (get-code cmd-obj 2) " ]") [] [])
+    ]
+    cf:= "agentset" [
+      repeat (ls:report agent-model (word "count " (get-code agent-obj 1)) []) [
+        (ls:ask cmd-model (get-code cmd-obj 1) [])
+      ]
+    ]
+  )
+    
+end
+    
+to-report get-code [ obj arg-num ]
+  report make-variadic-task (table:get obj "to-string") (table:get obj "args") arg-num
 end
 
-to-report make-variadic-task [astring args]
+;; arg-num is the number that the single argument will be given
+to-report make-variadic-task [astring args arg-num]
   ;; first turn args into a list, so we can compare full words. (If it's a string, 'test' is a member of 'test2')
   ;  show (list astring  args)
   let arg-no 0
@@ -581,7 +598,7 @@ to-report make-variadic-task [astring args]
   set astring add-spaces astring
   foreach string:rex-split astring "\\s" [
     ifelse member? ? args[
-      set sb lput (word "(item " (position ? args) " ?)") sb
+      set sb lput (word "(item " (position ? args) " ?" arg-num ")") sb
     ]
     [
       set sb lput ? sb      
@@ -599,7 +616,7 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   table:put task-table "to-string" task-string
   if length args > 0 
   [
-    set task-string (make-variadic-task task-string args)
+    set task-string (make-variadic-task task-string args 1)
   ]
   table:put task-table "args" args
   table:put task-table "type" the-type
@@ -1458,8 +1475,8 @@ to load
    foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
    [
      let relationship-type 0
-    if ? =  "levelspace_go_rel.txt" [ set relationship-type "Setup"]
-    if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Go"]
+     if ? =  "levelspace_go_rel.txt" [ set relationship-type "Go"]
+     if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Setup"]
      
      
      file-open ?

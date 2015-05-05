@@ -10,3 +10,6 @@
 [submodule "modules/String-Extension"]
 	path = modules/String-Extension
 	url = git@github.com:NetLogo/String-Extension.git
+[submodule "modules/ControlFlowExtension"]
+	path = modules/ControlFlowExtension
+	url = git@github.com:qiemem/ControlFlowExtension.git

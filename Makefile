@@ -6,11 +6,12 @@ XW_WIDGET_JARS=$(addprefix xw/widgets/,$(XW_WIDGETS))
 XW_WIDGET_SRCS=$(addprefix modules/eXtraWidgets/xw/widgets/,$(XW_WIDGETS))
 LS_XW_MOD=modules/LSWidgets
 LS_MOD=modules/LevelsSpace
+CF_MOD=modules/ControlFlowExtension
 SBT=env SBT_OPTS="-Xms512M -Xmx2048M -Xss6M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=724M" sbt
 
-default: string/string.jar xw/xw.jar xw/widgets/LSWidgets/LSWidgets.jar ls/ls.jar
+default: string/string.jar xw/xw.jar xw/widgets/LSWidgets/LSWidgets.jar ls/ls.jar cf/cf.jar
 
-modules $(STRING_MOD) $(LS_MOD) $(XW_MOD) $(LS_XW_MOD): .git/modules/$(STRING_MOD) .git/modules/$(LS_MOD) .git/modules/$(XW_MOD) .git/modules/$(LS_XW_MOD)
+modules $(STRING_MOD) $(LS_MOD) $(XW_MOD) $(LS_XW_MOD) $(CF_MOD): .git/modules/$(STRING_MOD) .git/modules/$(LS_MOD) .git/modules/$(XW_MOD) .git/modules/$(LS_XW_MOD) .git/modules/$(CF_MOD)
 	mkdir -p modules
 	git submodule update --init
 	touch modules
@@ -49,6 +50,13 @@ ls/ls.jar: $(LS_MOD)/extensions/ls
 $(LS_MOD)/extensions/ls: $(LS_MOD)/src
 	cd $(LS_MOD); $(SBT) package
 
+$(CF_MOD)/cf.jar: $(CF_MOD)/src
+	cd $(CF_MOD); $(SBT) package
+
+cf/cf.jar: $(CF_MOD)/cf.jar
+	mkdir -p cf
+	cp $(CF_MOD)/cf.jar cf/cf.jar
+
 clean:
-	rm -rf xw ls string
+	rm -rf xw ls string cf
 	git submodule foreach git clean -fdX
