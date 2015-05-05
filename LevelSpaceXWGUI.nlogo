@@ -330,12 +330,12 @@ end
 
 
 to-report get-arg-tuples-with-deps [identity-id-elig identity-id-args ]
-  let eligbility-entity entity-from-id identity-id-elig
+  let eligibility-entity entity-from-id identity-id-elig
   let arg-entity entity-from-id identity-id-args
   let the-args get-args arg-entity
   let outer []
   foreach the-args[
-    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligbility-entity)
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligibility-entity)
     set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
