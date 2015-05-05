@@ -556,7 +556,19 @@ end
 
 to run-relationships
   foreach table:to-list relationships [
-    run table:get last ? "task"
+    run-relationship last ?
+  ]
+end
+
+to run-relationship [ rel-obj ]
+  let agent-obj table:get tasks (table:get rel-obj "agent-id")
+  let cmd-obj table:get tasks (table:get rel-obj "command-id")
+  let cmd-model table:get cmd-obj "model"
+  let cmd-code make-variadic-task (table:get cmd-obj "to-string") (table:get cmd-obj "args")
+  if table:get agent-obj "type" = "agentset" [
+  ]
+  if table:get agent-obj "type" = "observer" [
+    (ls:ask cmd-model cmd-code [])
   ]
 end
 
@@ -1241,13 +1253,11 @@ to-report current-type
 end
 
 to run-relationship-by-id [id]
-  let the-relationship-table table:get relationships id
-  run table:get the-relationship-table "task"
+  run-relationship table:get relationships id
 end
 
 to run-setup-relationship-by-id [id]
-  let the-relationship-table table:get setup-relationships id
-  run table:get the-relationship-table "task"
+  run-relationship table:get setup-relationships id
 end
 
 to-report entity-ids-in-relationships
@@ -1286,7 +1296,7 @@ to run-relationships-once [ the-relationships ]
       ]
     ]
     if (still-need-to-delay?) [ wait delay ]
-    run table:get last ? "task"
+    run-relationship last ?
   ]
 end
 
