@@ -710,7 +710,7 @@ to load-and-setup-model [model-path]
     ;; and breeds
     add-model-breeds the-model
     ;; and breed variables
-    add-model-breed-vars the-model
+;    add-model-breed-vars the-model
     reset-gui
   ]
 end
