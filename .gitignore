@@ -1,5 +1,7 @@
 /string/
 /xw/
 /ls/
+/cf/
+*.jar
 *.swp
 target
