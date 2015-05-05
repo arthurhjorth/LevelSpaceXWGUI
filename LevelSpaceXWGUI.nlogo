@@ -266,6 +266,8 @@ to draw-center
         xw:set-delete-command (word "delete-setup-relationship" " " widget-name " draw-center")        
         xw:set-run-command (word "run-setup-relationship-by-id " relationship-id)
       ]
+      
+      xw:set-save-command (word "save-relationship-from-gui \"" relationship-id  "\"     xw:remove \"" relationship-id  "\" set center-column remove \"" relationship-id  "\" center-column   draw-center")
       ]
     ]
 end
@@ -363,8 +365,15 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
-  let rel-id 1 + max (fput -1 table:keys the-table)
-  table:put the-table rel-id the-relationship
+  ifelse a-widget = "new-rel"[
+    let rel-id 1 + max (fput -1 table:keys the-table)
+    table:put the-table rel-id the-relationship
+  ]
+  [
+    ;; runresult because a-widget is a string, we want a number
+    table:put the-table (runresult a-widget) the-relationship
+  ]
+  
 end
 
 
@@ -1328,7 +1337,9 @@ to load
    
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
-   set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
+   ;; there may be zero relationships saved. So we need to first check if there are any, and otherwise just report 0
+   let relationship-ids reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )
+   set relationship-serial ifelse-value (length relationship-ids > 0) [max relationship-ids + 1] [0]
    reset-gui
 end
 
