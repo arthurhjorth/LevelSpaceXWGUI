@@ -1,3 +1,7 @@
+Init (just first time after you clone)
+===
+    git submodule update --init
+
 Build instructions
 ===
 
