@@ -28,6 +28,7 @@ globals [
   entity-serial
   relationship-serial
   setup-relationships-serial
+  base-relationship-height
 ]
 
 to startup
@@ -59,6 +60,7 @@ to setup
   set left-column-width 400
   set center-column-width 450
   set center-column []
+  set base-relationship-height 110
   
   set margin 10
   
@@ -168,6 +170,14 @@ to draw-relationship-builder
   ]
 end
 
+to layout-center
+  let y margin
+  xw:ask center-column [
+    xw:set-y y
+    set y y + xw:height
+  ]
+end
+
 to draw-center
   clear-center
     xw:create-relationship "new-rel" 
@@ -176,7 +186,6 @@ to draw-center
       xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       xw:set-width center-column-width
       xw:set-x margin * 2 + left-column-width
-      xw:set-height 250
       xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities      
       xw:set-available-procedures []
       xw:set-selected-agent-reporter-index 0
@@ -187,13 +196,16 @@ to draw-center
           xw:set-selected-procedure-arguments []
           xw:set-selected-agentset-arguments []
         ]
+        layout-center
       ]
       xw:on-selected-procedure-change [
         update-command-args "new-rel"
+        layout-center
       ]
       xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-center"
 
-      set center-column lput "new-rel" center-column    
+      set center-column lput "new-rel" center-column 
+      resize-relationship
     ]
     
 ;    
@@ -206,11 +218,11 @@ to draw-center
       let agent-id table:get the-entity "agent-id"
       let command-id table:get the-entity "command-id"
       xw:create-relationship widget-name [
-        xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
+        xw:set-y margin + sum [xw:height] xw:of center-column
         xw:set-width center-column-width
         set center-column lput (word first ?) center-column            
         xw:set-x margin * 2 + left-column-width
-        xw:set-height 150
+        xw:set-height base-relationship-height
         xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities
         
         
@@ -299,8 +311,9 @@ to update-command-args [a-relationship-widget]
     let chosen-agent selected-agent-entity-from-relationship-widget a-relationship-widget
     ;; so that we can get the command entity-id (because agent disambiguates that)
     let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
-    
-    xw:set-available-procedure-arguments get-arg-tuples-with-deps acting-entity-id command-entity-id
+    let args get-arg-tuples-with-deps acting-entity-id command-entity-id
+    xw:set-available-procedure-arguments args
+    resize-relationship
   ]
 end
 
@@ -309,39 +322,28 @@ end
 ;; I just need to pass the list of indices or something. Or maybe the entity itself.
 to update-agent-args [a-relationship-widget ]
   xw:ask a-relationship-widget [
-  let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-relationship-widget
-  ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
-  let acting-entity-id agent-entity-id-from-item chosen-agent-item
-;    let chosen-agent-entity entity-from-id run-result chosen-agent-id
-    xw:set-available-agentset-arguments get-arg-tuples-with-deps acting-entity-id acting-entity-id
+    let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-relationship-widget
+    ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
+    let acting-entity-id agent-entity-id-from-item chosen-agent-item
+    let args get-arg-tuples-with-deps acting-entity-id acting-entity-id
+    xw:set-available-agentset-arguments args
+    resize-relationship
   ]
 end
 
-to-report get-arg-tuples [identity-id]
-  show "arg tuples"
-  show identity-id
-  let an-entity entity-from-id identity-id
-  let the-args get-args an-entity
-  let outer []
-  foreach the-args[
-    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments an-entity)
-    set outer lput tuple outer
-    xw:set-height xw:height + 20
-  ]
-  report outer
-  
+to resize-relationship
+  ;; 29 was determined empirically - bch
+  xw:set-height base-relationship-height + 29 * (length xw:available-agentset-arguments + length xw:available-procedure-arguments)
 end
-
 
 to-report get-arg-tuples-with-deps [identity-id-elig identity-id-args ]
   let eligibility-entity entity-from-id identity-id-elig
   let arg-entity entity-from-id identity-id-args
   let the-args get-args arg-entity
   let outer []
-  foreach the-args[
+  foreach the-args [
     let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligibility-entity)
     set outer lput tuple outer
-    xw:set-height xw:height + 20
   ]
   report outer
   
