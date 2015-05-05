@@ -270,6 +270,8 @@ to draw-center
         xw:set-delete-command (word "delete-setup-relationship" " " widget-name " draw-center")        
         xw:set-run-command (word "run-setup-relationship-by-id " relationship-id)
       ]
+      
+      xw:set-save-command (word "save-relationship-from-gui \"" relationship-id  "\"     xw:remove \"" relationship-id  "\" set center-column remove \"" relationship-id  "\" center-column   draw-center")
       ]
     ]
 end
@@ -286,14 +288,19 @@ end
 
 to update-command-args [a-relationship-widget]
   xw:ask a-relationship-widget [
-    ;; OK this is a bit complicated, but first get the item from the chooser
-  let chosen-command-item [xw:selected-procedure-index] xw:of a-relationship-widget
-  ;; then get the from the agent selector
-  let chosen-agent selected-agent-entity-from-relationship-widget a-relationship-widget
-  ;; so that we can get the command entity-id (because agent disambiguates that)
-  let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
-  ;; finally get the args  
-  xw:set-available-procedure-arguments get-arg-tuples command-entity-id
+    ;; first find agent-id
+    let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-relationship-widget
+    ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
+    let acting-entity-id agent-entity-id-from-item chosen-agent-item
+    
+    ;; then find command-id
+    let chosen-command-item [xw:selected-procedure-index] xw:of a-relationship-widget
+    ;; then get the from the agent selector
+    let chosen-agent selected-agent-entity-from-relationship-widget a-relationship-widget
+    ;; so that we can get the command entity-id (because agent disambiguates that)
+    let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
+    
+    xw:set-available-procedure-arguments get-arg-tuples-with-deps acting-entity-id command-entity-id
   ]
 end
 
@@ -306,19 +313,33 @@ to update-agent-args [a-relationship-widget ]
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
 ;    let chosen-agent-entity entity-from-id run-result chosen-agent-id
-    xw:set-available-agentset-arguments get-arg-tuples acting-entity-id
+    xw:set-available-agentset-arguments get-arg-tuples-with-deps acting-entity-id acting-entity-id
   ]
 end
 
 to-report get-arg-tuples [identity-id]
+  show "arg tuples"
+  show identity-id
   let an-entity entity-from-id identity-id
   let the-args get-args an-entity
   let outer []
   foreach the-args[
-;    let tuple (list ? map [table:get last ? "name"] get-eligible-arguments an-entity)
-;    print ?
-;    print get-eligible-arguments an-entity
-    let tuple (list ? map [(word first ? ":" table:get last ? "name")] get-eligible-arguments an-entity)
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments an-entity)
+    set outer lput tuple outer
+    xw:set-height xw:height + 20
+  ]
+  report outer
+  
+end
+
+
+to-report get-arg-tuples-with-deps [identity-id-elig identity-id-args ]
+  let eligibility-entity entity-from-id identity-id-elig
+  let arg-entity entity-from-id identity-id-args
+  let the-args get-args arg-entity
+  let outer []
+  foreach the-args[
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligibility-entity)
     set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
@@ -370,8 +391,15 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
-  let rel-id 1 + max (fput -1 table:keys the-table)
-  table:put the-table rel-id the-relationship
+  ifelse a-widget = "new-rel"[
+    let rel-id 1 + max (fput -1 table:keys the-table)
+    table:put the-table rel-id the-relationship
+  ]
+  [
+    ;; runresult because a-widget is a string, we want a number
+    table:put the-table (runresult a-widget) the-relationship
+  ]
+  
 end
 
 
@@ -468,7 +496,6 @@ to add-entity-to-col [an-entity ]
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
   let the-name name-of the-entity
   let entity-id first an-entity
-;  print the-entity
   ;; if it's builtin we just create a display widget for it
   ifelse table:get the-entity "builtin"[
     xw:create-procedure-display-widget name-of entity-from-id entity-id [
@@ -603,8 +630,7 @@ to-report make-variadic-task [astring args arg-num]
 end
 
 
-to-report new-entity [name model task-string args the-type permitted-contexts]  
-  ;  print model
+to-report new-entity [name model task-string args the-type permitted-contexts]
   let task-table table:make
   table:put task-table "name" name
   table:put task-table "model" model
@@ -892,31 +918,8 @@ to-report get-from-model-all-types [model-id a-type]
   report filter [table:get last ? "type" = a-type  and table:get last ? "model" = model-id ] table:to-list tasks
 end
 
-
-;; I think arguments are always any reporter, right?
-;; Turns out, no: eligible arguments are:
-;;; for agentsets: 
-;;;;; their own values (as entities)
-;;;;; globals in their own model
-;;;; for observers
-;;;;;; all global entities
-;;;;;; their own globals
-;; 
 to-report  get-eligible-arguments [an-entity]
-  let the-entity-type type-of an-entity
-  if the-entity-type = "agentset"[
-    report filter [ 
-      ;;;;; their own values (as entities) + globals
-      (table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ) and 
-      (member? "T" table:get last ? "contexts" or member? "O" table:get last ? "contexts" )
-      and table:get last ? "model" = table:get an-entity "model"
-      
-    ] table:to-list tasks
-  ]
-  if the-entity-type = "observer"[
-    
-  ]
-  report filter [table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ] table:to-list tasks 
+  report filter [table:get last ? "type" = "reporter" and table:get last ? "args" = [] ] table:to-list tasks
 end
 
 to-report agent-names
@@ -943,7 +946,6 @@ to add-model-breed-vars  [a-model]
 end
 
 to-report get-args [an-entity]
-  ;  print an-entity
   report table:get an-entity "args"
 end
 
@@ -1335,7 +1337,9 @@ to load
    
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
-   set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
+   ;; there may be zero relationships saved. So we need to first check if there are any, and otherwise just report 0
+   let relationship-ids reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )
+   set relationship-serial ifelse-value (length relationship-ids > 0) [max relationship-ids + 1] [0]
    reset-gui
 end
 
