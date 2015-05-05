@@ -564,24 +564,41 @@ to run-relationship [ rel-obj ]
   let agent-obj table:get tasks (table:get rel-obj "agent-id")
   let cmd-obj table:get tasks (table:get rel-obj "command-id")
   let cmd-model table:get cmd-obj "model"
+  let cmd-args map last table:get rel-obj "command-arg-id-tuples"
   
   let agent-type table:get agent-obj "type"
   let agent-model table:get agent-obj "model"
   
   (cf:match agent-type
     cf:case [ ? = "observer" ] [
-      (ls:ask cmd-model (get-code cmd-obj 1) [])
+      let cmd-arg-vals eval-args cmd-args
+      (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
     ]
-    cf:case [? = "agentset" and agent-model = cmd-model] [
-      (ls:ask cmd-model (word "ask " (get-code agent-obj 1) " [ " (get-code cmd-obj 2) " ]") [] [])
+    cf:case [ ? = "agentset" and agent-model = cmd-model ] [
+      ;; BCH - Since the arguments may be from other models, and since they may change from
+      ;; agent to agent, we have to do this looping ourselves.
+      foreach (ls:report agent-model (word "[(word self)] of " (get-code agent-obj 1)) []) [
+        let cmd-arg-vals eval-args cmd-args
+        (ls:ask cmd-model (word "ask " ? " [ " (get-code cmd-obj 1) " ]") cmd-arg-vals)
+      ]
     ]
     cf:= "agentset" [
       repeat (ls:report agent-model (word "count " (get-code agent-obj 1)) []) [
-        (ls:ask cmd-model (get-code cmd-obj 1) [])
+        let cmd-arg-vals eval-args cmd-args
+        (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
       ]
     ]
   )
-    
+end
+
+to-report eval-args [args]
+  report map [ eval-raw table:get tasks ? ] args
+end
+
+to-report eval-raw [ obj ]
+  let model table:get obj "model"
+  let code table:get obj "to-string"
+  report ifelse-value (model = "x") [ runresult code ] [ ls:report model code ]
 end
     
 to-report get-code [ obj arg-num ]
