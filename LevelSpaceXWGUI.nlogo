@@ -21,7 +21,6 @@ globals [
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
   setup-relationships ;; this is a table that contains all relationships that are run at setup
   test-var
-  relationship-counter
   wsp
   cc
   left-column-width
@@ -54,9 +53,7 @@ to setup
   table:put observer-entity "visible" true
   table:put observer-entity "path" "none"
   add-entity observer-entity
-  
-  
-  set relationship-counter 0
+
 ;  load-and-setup-model "Climate Change.nlogo"
 ;  set wsp 0
 ;  set cc 1
@@ -384,8 +381,9 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
-  table:put the-table relationship-counter the-relationship
-  set relationship-counter relationship-counter + 1
+  
+  let rel-id 1 + max table:keys the-table
+  table:put the-table rel-id the-relationship
 end
 
 
