@@ -346,12 +346,12 @@ to save-relationship-from-gui [a-widget]
   let command-entity-name name-of command-entity
   
   let acting-args get-args acting-entity
-  let agent-arg-items [xw:selected-agentset-argument-indices] xw:of a-widget
-  let acting-actuals actuals-from-item-tuples acting-entity agent-arg-items
+  let agent-arg-indices [xw:selected-agentset-argument-indices] xw:of a-widget
+  let acting-actuals actuals-from-item-tuples acting-entity agent-arg-indices
   
   let command-args get-args command-entity
-  let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
-  let command-actuals actuals-from-item-tuples command-entity command-arg-items
+  let command-arg-indices [xw:selected-procedure-argument-indices ] xw:of a-widget 
+  let command-actuals actuals-from-item-tuples command-entity command-arg-indices
   
   ;; and create a relationship (a table with all the info we want )
   let the-relationship add-relationship "N/A" acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
@@ -359,8 +359,8 @@ to save-relationship-from-gui [a-widget]
   let relationship-type xw:get "setup-or-go"  
 
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
-  let command-arg-id-tuples map [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
-  let agent-arg-id-tuples map [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
+  let command-arg-id-tuples map [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-indices
+  let agent-arg-id-tuples map [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-indices
   
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
