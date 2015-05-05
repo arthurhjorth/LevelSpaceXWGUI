@@ -532,7 +532,7 @@ to run-relationship [ rel-obj ]
   let agent-arg-vals eval-args "x" "" agent-args
   
   (cf:match agent-type
-    cf:case [ ? = "observer" ] [
+    cf:= "observer" [
       let cmd-arg-vals eval-args "x" "" cmd-args
       (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
     ]
