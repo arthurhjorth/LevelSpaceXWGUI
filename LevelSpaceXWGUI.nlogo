@@ -197,12 +197,11 @@ to draw-center
         xw:ask "new-rel" [
           xw:set-selected-procedure-arguments []
           xw:set-selected-agentset-arguments []
-          ]
-        
         ]
+      ]
       xw:on-selected-procedure-change [
         update-command-args "new-rel"
-        ]
+      ]
       xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-center"
 
       set center-column lput "new-rel" center-column    
@@ -678,19 +677,21 @@ end
 
 
 to load-and-setup-model [model-path]
-  let the-model 0
-  (ls:load-gui-model model-path [set the-model ?])
-  ;; add the observer of the model
-  add-observer the-model model-path
-  ;; add all a models procedures
-  add-model-procedures the-model
-  ;; and globals
-  add-model-globals the-model
-  ;; and breeds
-  add-model-breeds the-model
-  ;; and breed variables
-  add-model-breed-vars the-model
-  reset-gui
+  if is-string? model-path [
+    let the-model 0
+    (ls:load-gui-model model-path [set the-model ?])
+    ;; add the observer of the model
+    add-observer the-model model-path
+    ;; add all a models procedures
+    add-model-procedures the-model
+    ;; and globals
+    add-model-globals the-model
+    ;; and breeds
+    add-model-breeds the-model
+    ;; and breed variables
+    add-model-breed-vars the-model
+    reset-gui
+  ]
 end
 
 to add-observer [the-model model-path]
@@ -788,9 +789,9 @@ to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
       ; this works: let command-task get-task entity "add n co2" let energy-task ls:report 1 "task [energy]" ask run-task "red sheep"[] [let my-energy runresult energy-task (run command-task (list my-energy))]      
       let the-task task[
         let command-task get-task second-entity
-        let the-agents (runresult get-task first-entity [])
+        let the-agents (runresult get-task first-entity (map [(runresult ? [])] ent1args))
         ask the-agents [
-          (run command-task map [runresult ?] ent2args)
+          (run command-task map [(runresult ? [])] ent2args)
         ]        
       ]
       report the-task 
@@ -1119,6 +1120,7 @@ to reset-gui
   set center-column []
   set left-column []
   draw-gui
+  
 end
 
 to clear-gui
@@ -1492,7 +1494,7 @@ to load
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
-   
+
 end
 
 to load-task [a-table the-id]
