@@ -982,7 +982,7 @@ to reset-gui
   set center-column []
   set left-column []
   draw-gui
-  
+  xw:select-tab "lsgui"
 end
 
 to clear-gui
@@ -1331,7 +1331,7 @@ to load
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
-
+   reset-gui
 end
 
 to load-task [a-table the-id]
