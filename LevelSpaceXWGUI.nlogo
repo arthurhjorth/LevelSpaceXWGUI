@@ -492,7 +492,6 @@ to add-entity-to-col [an-entity ]
   let the-entity last an-entity ;; ok, this naming is shit. we need to fix that at some point
   let the-name name-of the-entity
   let entity-id first an-entity
-;  print the-entity
   ;; if it's builtin we just create a display widget for it
   ifelse table:get the-entity "builtin"[
     xw:create-procedure-display-widget name-of entity-from-id entity-id [
@@ -627,8 +626,7 @@ to-report make-variadic-task [astring args arg-num]
 end
 
 
-to-report new-entity [name model task-string args the-type permitted-contexts]  
-  ;  print model
+to-report new-entity [name model task-string args the-type permitted-contexts]
   let task-table table:make
   table:put task-table "name" name
   table:put task-table "model" model
@@ -915,32 +913,8 @@ to-report get-from-model-all-types [model-id a-type]
   report filter [table:get last ? "type" = a-type  and table:get last ? "model" = model-id ] table:to-list tasks
 end
 
-
-;; I think arguments are always any reporter, right?
-;; Turns out, no: eligible arguments are:
-;;; for agentsets: 
-;;;;; their own values (as entities)
-;;;;; globals in their own model
-;;;; for observers
-;;;;;; all global entities
-;;;;;; their own globals
-;; 
 to-report  get-eligible-arguments [an-entity]
-  let the-entity-type type-of an-entity
-  if the-entity-type = "agentset"[
-    report filter [ 
-      ;;;;; their own values (as entities) + globals
-      (table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ) and 
-      ((member? "T" table:get last ? "contexts" and table:get last ? "model" = table:get an-entity "model") or
-        (member? "O" table:get last ? "contexts" and table:get last ? "model" != table:get an-entity "model"))
-      
-    ] table:to-list tasks
-  ]
-  show the-entity-type
-  if the-entity-type = "observer"[
-    report filter [table:get last ? "type" = "reporter"] table:to-list tasks     
-  ]
-
+  report filter [table:get last ? "type" = "reporter" and table:get last ? "args" = [] ] table:to-list tasks
 end
 
 to-report agent-names
@@ -967,7 +941,6 @@ to add-model-breed-vars  [a-model]
 end
 
 to-report get-args [an-entity]
-  ;  print an-entity
   report table:get an-entity "args"
 end
 
