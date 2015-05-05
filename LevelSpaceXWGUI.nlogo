@@ -732,7 +732,6 @@ to load-and-setup-model [model-path]
     ;; and breeds
     add-model-breeds the-model
     ;; and breed variables
-;    add-model-breed-vars the-model
     reset-gui
   ]
 end
@@ -927,9 +926,7 @@ end
 ;;;;;; their own globals
 ;; 
 to-report  get-eligible-arguments [an-entity]
-  show "eli arg"
   let the-entity-type type-of an-entity
-  show the-entity-type
   if the-entity-type = "agentset"[
     report filter [ 
       ;;;;; their own values (as entities) + globals
