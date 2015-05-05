@@ -1440,7 +1440,7 @@ to load
       if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
         load-model table:get the-task "path" the-id
       ]
-      if the-type = "command" or the-type = "agentset" or the-type = "value" [
+      if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
         load-task the-task the-id
       ]
     ]
