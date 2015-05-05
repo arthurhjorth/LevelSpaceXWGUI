@@ -569,38 +569,50 @@ to run-relationship [ rel-obj ]
   let agent-type table:get agent-obj "type"
   let agent-model table:get agent-obj "model"
   let agent-args map last table:get rel-obj "agent-arg-id-tuples"
-  let agent-arg-vals eval-args agent-args
+  let agent-arg-vals eval-args "x" "" agent-args
   
   (cf:match agent-type
     cf:case [ ? = "observer" ] [
-      let cmd-arg-vals eval-args cmd-args
+      let cmd-arg-vals eval-args "x" "" cmd-args
       (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
     ]
     cf:case [ ? = "agentset" and agent-model = cmd-model ] [
       ;; BCH - Since the arguments may be from other models, and since they may change from
       ;; agent to agent, we have to do this looping ourselves.
-      foreach (ls:report agent-model (word "[(word self)] of " (get-code agent-obj 1)) agent-arg-vals) [
-        let cmd-arg-vals eval-args cmd-args
+      foreach (get-agent-list agent-obj agent-arg-vals) [
+        let cmd-arg-vals eval-args agent-model ? cmd-args
         (ls:ask cmd-model (word "ask " ? " [ " (get-code cmd-obj 1) " ]") cmd-arg-vals)
       ]
     ]
     cf:= "agentset" [
-      repeat (ls:report agent-model (word "count " (get-code agent-obj 1)) agent-arg-vals) [
-        let cmd-arg-vals eval-args cmd-args
+      foreach (get-agent-list agent-obj agent-arg-vals) [
+        let cmd-arg-vals eval-args agent-model ? cmd-args
         (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
       ]
     ]
   )
 end
 
-to-report eval-args [args]
-  report map [ eval-raw table:get tasks ? ] args
+to-report get-agent-list [ agent-obj args ]
+  report (ls:report
+    (table:get agent-obj "model")
+    (word "[(word self)] of " (get-code agent-obj 1))
+    args
+  )
 end
 
-to-report eval-raw [ obj ]
+to-report eval-args [agent-model self-string args]
+  report map [ eval-raw agent-model self-string table:get tasks ? ] args
+end
+
+to-report eval-raw [agent-model self-string obj]
   let model table:get obj "model"
   let code table:get obj "to-string"
-  report ifelse-value (model = "x") [ runresult code ] [ ls:report model code ]
+  report (cf:cond-value
+    cf:case [ model = "x" ] [ runresult code ]
+    cf:case [ model = agent-model ] [ (ls:report agent-model (word "[ " code " ] of " self-string)) ]
+    cf:else [ ls:report model code ]
+  )
 end
     
 to-report get-code [ obj arg-num ]
