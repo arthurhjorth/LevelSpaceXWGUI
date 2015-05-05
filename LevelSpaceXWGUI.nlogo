@@ -284,14 +284,19 @@ end
 
 to update-command-args [a-relationship-widget]
   xw:ask a-relationship-widget [
-    ;; OK this is a bit complicated, but first get the item from the chooser
-  let chosen-command-item [xw:selected-procedure-index] xw:of a-relationship-widget
-  ;; then get the from the agent selector
-  let chosen-agent selected-agent-entity-from-relationship-widget a-relationship-widget
-  ;; so that we can get the command entity-id (because agent disambiguates that)
-  let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
-  ;; finally get the args  
-  xw:set-available-procedure-arguments get-arg-tuples command-entity-id
+    ;; first find agent-id
+    let chosen-agent-item [xw:selected-agent-reporter-index] xw:of a-relationship-widget
+    ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
+    let acting-entity-id agent-entity-id-from-item chosen-agent-item
+    
+    ;; then find command-id
+    let chosen-command-item [xw:selected-procedure-index] xw:of a-relationship-widget
+    ;; then get the from the agent selector
+    let chosen-agent selected-agent-entity-from-relationship-widget a-relationship-widget
+    ;; so that we can get the command entity-id (because agent disambiguates that)
+    let command-entity-id command-entity-id-from-item chosen-agent chosen-command-item
+    
+    xw:set-available-procedure-arguments get-arg-tuples-with-deps acting-entity-id command-entity-id
   ]
 end
 
@@ -304,16 +309,33 @@ to update-agent-args [a-relationship-widget ]
   ;; Ok, now we have the item. Since this is always the same, it's easy to look this up.
   let acting-entity-id agent-entity-id-from-item chosen-agent-item
 ;    let chosen-agent-entity entity-from-id run-result chosen-agent-id
-    xw:set-available-agentset-arguments get-arg-tuples acting-entity-id
+    xw:set-available-agentset-arguments get-arg-tuples-with-deps acting-entity-id acting-entity-id
   ]
 end
 
 to-report get-arg-tuples [identity-id]
+  show "arg tuples"
+  show identity-id
   let an-entity entity-from-id identity-id
   let the-args get-args an-entity
   let outer []
   foreach the-args[
     let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments an-entity)
+    set outer lput tuple outer
+    xw:set-height xw:height + 20
+  ]
+  report outer
+  
+end
+
+
+to-report get-arg-tuples-with-deps [identity-id-elig identity-id-args ]
+  let eligbility-entity entity-from-id identity-id-elig
+  let arg-entity entity-from-id identity-id-args
+  let the-args get-args arg-entity
+  let outer []
+  foreach the-args[
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligbility-entity)
     set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
@@ -905,7 +927,9 @@ end
 ;;;;;; their own globals
 ;; 
 to-report  get-eligible-arguments [an-entity]
+  show "eli arg"
   let the-entity-type type-of an-entity
+  show the-entity-type
   if the-entity-type = "agentset"[
     report filter [ 
       ;;;;; their own values (as entities) + globals
@@ -915,10 +939,11 @@ to-report  get-eligible-arguments [an-entity]
       
     ] table:to-list tasks
   ]
+  show the-entity-type
   if the-entity-type = "observer"[
-    
+    report filter [table:get last ? "type" = "reporter"] table:to-list tasks     
   ]
-  report filter [table:get last ? "type" = "reporter"] table:to-list tasks 
+
 end
 
 to-report agent-names
