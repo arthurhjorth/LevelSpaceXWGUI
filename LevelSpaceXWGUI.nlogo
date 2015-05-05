@@ -1029,7 +1029,7 @@ to-report create-entity-from-widget [ widget-name ]
 
   let created-entity false
   carefully [
-    set created-entity name model-id code args-list the-type "OTPL"
+    set created-entity new-entity name model-id code args-list the-type "OTPL"
   ] [
     xw:ask widget-name [xw:set-color red]
     user-message error-message
