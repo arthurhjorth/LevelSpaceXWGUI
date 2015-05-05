@@ -39,12 +39,12 @@ to startup
     
   xw:create-relationship "rel-test" [
     xw:set-x [xw:width + 10] xw:of "test"
-    xw:set-width 380
+    xw:set-width 450
     xw:set-height 250
     xw:set-available-agent-reporters ["observer" "turtles" "patches"]
     xw:set-available-procedures ["go" "create C02"]
     xw:set-available-agentset-arguments [
-      ["baz" ["aye" "bee"]]
+      ["baz" ["ayeeeeeeeeeeeeeeeeeeeeeeeeee" "bee"]]
       ["qux" ["cee" "dee"]]
     ]
     xw:set-selected-agentset-arguments [
@@ -52,7 +52,7 @@ to startup
       ["qux" "cee"]
     ]
     xw:set-available-procedure-arguments [
-      ["foo" ["one" "two"]]
+      ["foo" ["oneoneoneoneoneononeoneoneoeoneoneoneoneoneoneone" "two"]]
       ["bar" ["three" "four"]]
     ]
     xw:set-selected-procedure-arguments [
