@@ -1,4 +1,4 @@
-extensions [ls table string xw ]
+extensions [ls table string xw cf]
 __includes [ "notebook.nls" ]
 
 breed [models model]
@@ -21,7 +21,6 @@ globals [
   relationships ;; this is a table that contains all relationships (i.e. center stuff)
   setup-relationships ;; this is a table that contains all relationships that are run at setup
   test-var
-  relationship-counter
   wsp
   cc
   left-column-width
@@ -55,17 +54,6 @@ to setup
   table:put observer-entity "path" "none"
   add-entity observer-entity
   
-  
-  set relationship-counter 0
-;  load-and-setup-model "Climate Change.nlogo"
-;  set wsp 0
-;  set cc 1
-;  ls:ask wsp "set grass? true"
-;  ls:ask wsp "setup"
-;  ls:ask cc "import-world \"ls-gui-setup\""
-;  ls:show 0
-;  ls:show 1
-  
   set left-column []
   set left-column-width 400
   set center-column []
@@ -73,10 +61,7 @@ to setup
   set margin 10
   
   setup-notebook
-  
-  ;; for testing. take this out
-
-reset-gui
+  reset-gui
   reset-ticks
 end
 
@@ -197,12 +182,11 @@ to draw-center
         xw:ask "new-rel" [
           xw:set-selected-procedure-arguments []
           xw:set-selected-agentset-arguments []
-          ]
-        
         ]
+      ]
       xw:on-selected-procedure-change [
         update-command-args "new-rel"
-        ]
+      ]
       xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-center"
 
       set center-column lput "new-rel" center-column    
@@ -331,7 +315,7 @@ to-report get-arg-tuples [identity-id]
 ;    print ?
 ;    print get-eligible-arguments an-entity
     let tuple (list ? map [(word first ? ":" table:get last ? "name")] get-eligible-arguments an-entity)
-    set outer fput tuple outer
+    set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
   report outer
@@ -346,8 +330,6 @@ end
 to delete-setup-relationship [a-widget]
   table:remove setup-relationships a-widget
 end
-
-;; (map list [1 2 3] [a b c])
 
 to save-relationship-from-gui [a-widget]
   ;; find the agent
@@ -371,22 +353,21 @@ to save-relationship-from-gui [a-widget]
   let command-arg-items [xw:selected-procedure-argument-indices ] xw:of a-widget 
   let command-actuals actuals-from-item-tuples command-entity command-arg-items
   
-  ;;Now  get the interaction-task between these two
-  let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
   ;; and create a relationship (a table with all the info we want )
-  let the-relationship add-relationship ls-task acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
+  let the-relationship add-relationship "N/A" acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
   ;; and now add it to the right place
   let relationship-type xw:get "setup-or-go"  
 
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
-  let command-arg-id-tuples map  [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
-  let agent-arg-id-tuples map  [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
+  let command-arg-id-tuples map [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-items
+  let agent-arg-id-tuples map [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-items
   
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
-  table:put the-table relationship-counter the-relationship
-  set relationship-counter relationship-counter + 1
+  
+  let rel-id 1 + max (fput -1 table:keys the-table)
+  table:put the-table rel-id the-relationship
 end
 
 
@@ -539,31 +520,67 @@ to-report to-string [an-entity]
   report table:get last an-entity "to-string" 
 end
 
-
-
-
-to go
-  run-relationships
-end
-
-to test
-  ;  add-entity "1-sheep-energy" new-entity 1  "sheep with [ an-expression ]" ["an-expression"] "agentset" "-T--"
-end
-
-to simulate-eco-ls-system
-  setup
+to run-relationship [ rel-obj ]
+  let agent-obj table:get tasks (table:get rel-obj "agent-id")
+  let cmd-obj table:get tasks (table:get rel-obj "command-id")
+  let cmd-model table:get cmd-obj "model"
+  let cmd-args map last table:get rel-obj "command-arg-id-tuples"
   
+  let agent-type table:get agent-obj "type"
+  let agent-model table:get agent-obj "model"
+  let agent-args map last table:get rel-obj "agent-arg-id-tuples"
+  let agent-arg-vals eval-args "x" "" agent-args
   
+  (cf:match agent-type
+    cf:= "observer" [
+      let cmd-arg-vals eval-args "x" "" cmd-args
+      (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
+    ]
+    cf:case [ ? = "agentset" and agent-model = cmd-model ] [
+      ;; BCH - Since the arguments may be from other models, and since they may change from
+      ;; agent to agent, we have to do this looping ourselves.
+      foreach (get-agent-list agent-obj agent-arg-vals) [
+        let cmd-arg-vals eval-args agent-model ? cmd-args
+        (ls:ask cmd-model (word "ask " ? " [ " (get-code cmd-obj 1) " ]") cmd-arg-vals)
+      ]
+    ]
+    cf:= "agentset" [
+      foreach (get-agent-list agent-obj agent-arg-vals) [
+        let cmd-arg-vals eval-args agent-model ? cmd-args
+        (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
+      ]
+    ]
+  )
 end
 
-
-to run-relationships
-  foreach table:to-list relationships [
-    run table:get last ? "task"
-  ]
+to-report get-agent-list [ agent-obj args ]
+  report (ls:report
+    (table:get agent-obj "model")
+    (word "[(word self)] of " (get-code agent-obj 1))
+    args
+  )
 end
 
-to-report make-variadic-task [astring args]
+to-report eval-args [agent-model self-string args]
+  report map [ eval-raw agent-model self-string table:get tasks ? ] args
+end
+
+to-report eval-raw [agent-model self-string obj]
+  let model table:get obj "model"
+  let code table:get obj "to-string"
+  report (cf:cond-value
+    cf:case [ model = "x" ] [ runresult code ]
+    cf:case [ model = agent-model ] [ (ls:report agent-model (word "[ " code " ] of " self-string)) ]
+    cf:else [ ls:report model code ]
+  )
+end
+    
+to-report get-code [ obj arg-num ]
+  report make-variadic-task (table:get obj "to-string") (table:get obj "args") arg-num
+end
+
+;; arg-num is the number that the single argument will be given
+to-report make-variadic-task [astring args arg-num]
   ;; first turn args into a list, so we can compare full words. (If it's a string, 'test' is a member of 'test2')
   ;  show (list astring  args)
   let arg-no 0
@@ -572,7 +589,7 @@ to-report make-variadic-task [astring args]
   set astring add-spaces astring
   foreach string:rex-split astring "\\s" [
     ifelse member? ? args[
-      set sb lput (word "(item " (position ? args) " ?)") sb
+      set sb lput (word "(item " (position ? args) " ?" arg-num ")") sb
     ]
     [
       set sb lput ? sb      
@@ -588,9 +605,8 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   table:put task-table "name" name
   table:put task-table "model" model
   table:put task-table "to-string" task-string
-  if length args > 0 
-  [
-    set task-string (make-variadic-task task-string args)
+  if length args > 0 [
+    set task-string (make-variadic-task task-string args 1)
   ]
   table:put task-table "args" args
   table:put task-table "type" the-type
@@ -598,11 +614,9 @@ to-report new-entity [name model task-string args the-type permitted-contexts]
   table:put task-table "visible" true
   table:put task-table "builtin" false
   ;; special case tasks created in the LevelSpace/Metaverse or whatever stupid name Bryan insists on. <3 <3
-  ifelse model = "x"
-  [
+  ifelse model = "x" [
     table:put task-table "task" task [ run-result task-string ]
-  ]
-  [
+  ] [
     let task-from-model ls:report model (word "task [ " task-string " ]") 
     ;; in terms of knowing how to compile the tasks, we need to know two things:
     ;; first, is it a command or a reporter - this is in the 'the-type' variable
@@ -678,19 +692,21 @@ end
 
 
 to load-and-setup-model [model-path]
-  let the-model 0
-  (ls:load-gui-model model-path [set the-model ?])
-  ;; add the observer of the model
-  add-observer the-model model-path
-  ;; add all a models procedures
-  add-model-procedures the-model
-  ;; and globals
-  add-model-globals the-model
-  ;; and breeds
-  add-model-breeds the-model
-  ;; and breed variables
-  add-model-breed-vars the-model
-  reset-gui
+  if is-string? model-path [
+    let the-model 0
+    (ls:load-gui-model model-path [set the-model ?])
+    ;; add the observer of the model
+    add-observer the-model model-path
+    ;; add all a models procedures
+    add-model-procedures the-model
+    ;; and globals
+    add-model-globals the-model
+    ;; and breeds
+    add-model-breeds the-model
+    ;; and breed variables
+    add-model-breed-vars the-model
+    reset-gui
+  ]
 end
 
 to add-observer [the-model model-path]
@@ -720,8 +736,8 @@ to add-model-procedures [the-model]
     repeat length args [set args-string (word args-string " ?")]
     let task-string string:lower-case  (word procedure-name  args-string)
     let the-entity new-entity procedure-name the-model task-string args the-type item 2 ?
-  table:put the-entity "visible" true
-  table:put the-entity "builtin" true
+    table:put the-entity "visible" true
+    table:put the-entity "builtin" true
     add-entity the-entity
   ]
 end
@@ -767,86 +783,6 @@ to add-model-breeds [the-model]
     
   ]  
 end
-
-
-
-
-to-report tasks-with [afilter]
-  
-end
-
-to-report get-ls-task-between [entity1 ent1args entity2 ent2args]
-  let first-entity entity-from-id entity1 
-  let second-entity entity-from-id entity2
-  let first-entity-type table:get first-entity "type"
-  let second-entity-type table:get second-entity "type"
-  
-  
-  if (first-entity-type = "agentset")[
-    if second-entity-type = "COMMAND" or second-entity-type = "command" [
-      ; if an agenset interacts with a command, each member of the agenset calls the command
-      ; this works: let command-task get-task entity "add n co2" let energy-task ls:report 1 "task [energy]" ask run-task "red sheep"[] [let my-energy runresult energy-task (run command-task (list my-energy))]      
-      let the-task task[
-        let command-task get-task second-entity
-        let the-agents (runresult get-task first-entity [])
-        ask the-agents [
-          (run command-task map [runresult ?] ent2args)
-        ]        
-      ]
-      report the-task 
-    ]
-  ]
-  if first-entity-type = "observer"[
-    ;; observers will never have args, so we disregard the first args here
-    if second-entity-type = "command" [
-      let the-observer-id get-model first-entity
-      let the-command get-task second-entity
-      let the-task task [ 
-        ;; again here we first resolve the args
-        let actual-args2 map [(run-result ? [] )] ent2args
-        (run the-command actual-args2)
-      ]
-      report the-task
-    ]
-  ]
-
-end
-;;; args are a list of tasks ONLY
-;to add-ls-interaction-between  [entity1 ent1args entity2 ent2args ent1argstring ent2argstring] ;; string versions are for the gui - they are the names of args, not actuals
-;  let first-entity entity entity1 
-;  let second-entity entity entity2
-;  let first-entity-type table:get first-entity "type"
-;  let second-entity-type table:get second-entity "type"
-;  
-;  
-;  if (first-entity-type = "agentset")[
-;    if second-entity-type = "COMMAND" or second-entity-type = "command" [
-;      ; if an agenset interacts with a command, each member of the agenset calls the command
-;      ; this works: let command-task get-task entity "add n co2" let energy-task ls:report 1 "task [energy]" ask run-task "red sheep"[] [let my-energy runresult energy-task (run command-task (list my-energy))]      
-;      let the-task task[
-;        let command-task get-task second-entity
-;        let the-agents (runresult get-task first-entity [])
-;        ask the-agents [
-;          (run command-task map [runresult ?] ent2args)
-;        ]        
-;      ]
-;      add-relationship the-task entity1 ent1args entity2 ent2args  ent1argstring ent2argstring
-;    ]
-;  ]
-;  if first-entity-type = "observer"[
-;    ;; observers will never have args, so we disregard the first args here
-;    if second-entity-type = "command" [
-;      let the-observer-id get-model first-entity
-;      let the-command get-task second-entity
-;      let the-task task [
-;        ;; again here we first resolve the args
-;        let actual-args2 map [(run-result ? [] )] ent2args
-;        (run the-command actual-args2)
-;      ]
-;      add-relationship the-task entity1 ent1args entity2 ent2args ent1argstring ent2argstring
-;    ]
-;  ]
-;end
 
 
 ;; this needs to be rewritten so that it takes an entity and a literal, and then figures out how to turn
@@ -1007,60 +943,6 @@ to-report get-args [an-entity]
   report table:get an-entity "args"
 end
 
-
-
-
-to-report get-actuals [entity-name caller-entity]
-  let the-entity entity entity-name
-  let entity-args get-args the-entity
-  let entity-actuals []
-  foreach entity-args [
-    let entity-or-literal user-one-of (word "Do you want the value of " ? " to be an entity or a literal?") ["entity" "literal"]
-    if entity-or-literal  = "literal" [
-      ;; take it, turn it into a task, put it in actuals
-      let the-user-input user-input (word "Please write the value of " ? " here. Use quotation marks for strings.") 
-      ;; get the args from the context of the caller
-      let the-task literal-to-task entity caller-entity the-user-input 
-      set entity-actuals lput the-task entity-actuals 
-    ]
-    if entity-or-literal = "entity" [
-      let eligible-arguments map [first ?] get-eligible-arguments caller-entity
-      let the-argument-name user-one-of "Which entity should be its argument?" eligible-arguments
-      let the-task get-task entity the-argument-name
-      set entity-actuals lput the-task entity-actuals
-      ;      set entity-actuals lput entity-to-task first user-one-of (word "Which entity should be its argument?") get-eligible-arguments the-entity entity-actuals 
-    ]
-  ]
-  report entity-actuals
-end
-
-to gui-add-entity
-  let entity-model user-one-of "In which model do you want to create an entity?" map [first ? ] all-observers
-  let entity-type user-one-of "What kind of entity do you want to create?" ["agentset" "value" "command"]
-  let entity-name user-input "What do you want to call your entity?" 
-  let entity-string user-input "What should it do?"
-  let entity-args user-input "If it has any arguments, please write them here, separated by a space. Otherwise leave blank."
-  ifelse entity-args != "" [
-    set entity-args string:rex-split entity-args  " "
-  ]
-  [
-    set entity-args []
-  ]
-  let entity-otpl ""
-  ;; we need to resolve OTPL here. If it is an agentset, it is accessible to all observers, so that's just "O---"
-  if entity-type = "agentset"
-  [
-    set entity-otpl "O---"
-  ]
-  ;; I think we always call them 
-  set entity-otpl "O---"
-  
-  let model-id table:get (table:get tasks entity-model) "model"
-  add-entity new-entity entity-name model-id entity-string entity-args entity-type "OTPL"
-end
-
-
-
 to update-output
   clear-output
   foreach table:keys tasks [
@@ -1095,30 +977,12 @@ to-report type-of [an-entity]
   report table:get an-entity "type"
 end
 
-;; run-task is for reporter tasks
-to-report run-task [the-entity actuals]
-  let the-task get-task the-entity
-  if (is-reporter-task? the-task)
-  [
-    report (runresult the-task actuals)
-  ]
-  if is-command-task? the-task [
-    (run the-task actuals)
-  ]
-end
-
-;; do task is for command tasks
-to do-task [entity-name actuals]  
-  let the-entity entity entity-name
-  let the-task get-task the-entity
-  (run the-task actuals)
-end
-
 to reset-gui
   foreach xw:widgets [xw:remove ?]
   set center-column []
   set left-column []
   draw-gui
+  xw:select-tab "lsgui"
 end
 
 to clear-gui
@@ -1140,73 +1004,51 @@ to clear-left
   ]
 end
 
-to-report get-by-serial
-  
-end
-
-
 to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
     new-entity-from-widget a-widget-name 
-  ]
-  [
+  ] [
     existing-entity-from-widget a-widget-name entity-id
   ]
-  
-  
 end
 
-to existing-entity-from-widget [a-widget-name entity-id]
+;; Reports created entity if it works, otherwise false
+to-report create-entity-from-widget [ widget-name ]
   let model-id get-model entity xw:get "Models"
-  let name [xw:name] xw:of a-widget-name
-  let code [xw:code] xw:of a-widget-name
+  let name [xw:name] xw:of widget-name
+  let code [xw:code] xw:of widget-name
   ;; turn args into a list of args, not just one long string
-  let args-string string:trim [xw:args] xw:of a-widget-name
+  let args-string string:trim [xw:args] xw:of widget-name
   let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
   ;; @todo: we need a dropdown for this
   
   let the-type current-type
-        
-  let the-entity 0
-  let code-worked? true
+
   carefully [
-    set the-entity new-entity name model-id code args-list the-type "OTPL"
+    report new-entity name model-id code args-list the-type "OTPL"
+  ] [
+    xw:ask widget-name [xw:set-color red]
+    user-message error-message
+    report false
   ]
-  [
-    set code-worked? false
-    xw:ask a-widget-name [xw:set-color red]
-  ]  
-  if code-worked?
-  [
-    table:put tasks entity-id the-entity
+end
+
+to existing-entity-from-widget [widget-name entity-id]
+  let created-entity create-entity-from-widget widget-name
+  if created-entity != false [
+    table:put tasks entity-id created-entity
     draw-center ;; redraw center to update the new entity in all drop downs
     show-it
   ]
 end
 
-to new-entity-from-widget [a-widget-name]
-  let model-id get-model entity xw:get "Models"
-  let name [xw:name] xw:of a-widget-name
-  let code [xw:code] xw:of a-widget-name
-  ;; turn args into a list of args, not just one long string
-  let args-string string:trim [xw:args] xw:of a-widget-name
-  let args-list ifelse-value (length args-string = 0) [[]] [string:rex-split args-string " " ]
-  let the-type current-type
-  let the-entity 0
-  let code-worked? true
-  carefully [
-    set the-entity new-entity name model-id code args-list the-type "OTPL"
-  ]
-  [
-    set code-worked? false
-    xw:ask "new thing" [xw:set-color red]
-  ]
-  if code-worked?
-  [  
-    add-entity the-entity
+to new-entity-from-widget [widget-name]
+  let created-entity create-entity-from-widget widget-name
+  if created-entity != false [  
+    add-entity created-entity
     draw-center ;; redraw center to update the new entity in all drop downs    
     show-it
   ]
@@ -1234,20 +1076,19 @@ to close-and-remove [model-id]
 end
 
 to-report current-type
-  let widget-type xw:get "data-types"
-  if widget-type = "Extended Agents" [report "agentset"]
-  if widget-type = "Commands" [report "command"]
-  if widget-type = "Reporters" [report "reporter"]
+  report (cf:match-value xw:get "data-types"
+    cf:= "Extended Agents" [ "agentset" ]
+    cf:= "Commands"        [ "command" ]
+    cf:= "Reporters"       [ "reporter" ]
+  )
 end
 
 to run-relationship-by-id [id]
-  let the-relationship-table table:get relationships id
-  run table:get the-relationship-table "task"
+  run-relationship table:get relationships id
 end
 
 to run-setup-relationship-by-id [id]
-  let the-relationship-table table:get setup-relationships id
-  run table:get the-relationship-table "task"
+  run-relationship table:get setup-relationships id
 end
 
 to-report entity-ids-in-relationships
@@ -1286,7 +1127,7 @@ to run-relationships-once [ the-relationships ]
       ]
     ]
     if (still-need-to-delay?) [ wait delay ]
-    run table:get last ? "task"
+    run-relationship last ?
   ]
 end
 
@@ -1438,7 +1279,7 @@ to load
       if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
         load-model table:get the-task "path" the-id
       ]
-      if the-type = "command" or the-type = "agentset" or the-type = "value" [
+      if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
         load-task the-task the-id
       ]
     ]
@@ -1448,8 +1289,8 @@ to load
    foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
    [
      let relationship-type 0
-    if ? =  "levelspace_go_rel.txt" [ set relationship-type "Setup"]
-    if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Go"]
+     if ? =  "levelspace_go_rel.txt" [ set relationship-type "Go"]
+     if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Setup"]
      
      
      file-open ?
@@ -1473,11 +1314,9 @@ to load
 
          let command-arg-ids table:get the-table "command-arg-id-tuples"
          let command-actuals map [get-task entity-from-id last ?] command-arg-ids
-         
-         let ls-task get-ls-task-between acting-entity-id acting-actuals command-entity-id command-actuals 
 
 ;         ;; and create a relationship (a table with all the info we want )
-         let the-relationship add-relationship ls-task (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
+         let the-relationship add-relationship "N/A" (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
          
          ;; and now save the arg-id tupes
 
@@ -1492,7 +1331,7 @@ to load
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    set relationship-serial (max reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )) + 1
-   
+   reset-gui
 end
 
 to load-task [a-table the-id]
