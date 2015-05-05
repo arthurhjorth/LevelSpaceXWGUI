@@ -310,9 +310,8 @@ to-report get-arg-tuples [identity-id]
   let an-entity entity-from-id identity-id
   let the-args get-args an-entity
   let outer []
-  let the-model table:get an-entity "model"
   foreach the-args[
-    let tuple (list ? map [(word the-model ":" table:get last ? "name")] get-eligible-arguments an-entity)
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments an-entity)
     set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
@@ -902,15 +901,15 @@ to-report  get-eligible-arguments [an-entity]
     report filter [ 
       ;;;;; their own values (as entities) + globals
       (table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ) and 
-      (member? "T" table:get last ? "contexts" or member? "O" table:get last ? "contexts" )
-      and table:get last ? "model" = table:get an-entity "model"
+      ((member? "T" table:get last ? "contexts" and table:get last ? "model" = table:get an-entity "model") or
+        (member? "O" table:get last ? "contexts" and table:get last ? "model" != table:get an-entity "model"))
       
     ] table:to-list tasks
   ]
   if the-entity-type = "observer"[
     
   ]
-  report filter [table:get last ? "type" = "reporter" or table:get last ? "type" = "value" ] table:to-list tasks 
+  report filter [table:get last ? "type" = "reporter"] table:to-list tasks 
 end
 
 to-report agent-names
