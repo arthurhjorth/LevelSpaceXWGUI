@@ -24,6 +24,7 @@ globals [
   wsp
   cc
   left-column-width
+  center-column-width
   entity-serial
   relationship-serial
   setup-relationships-serial
@@ -56,6 +57,7 @@ to setup
   
   set left-column []
   set left-column-width 400
+  set center-column-width 450
   set center-column []
   
   set margin 10
@@ -73,11 +75,12 @@ to draw-GUI
 end
 
 to draw-aux-buttons
+  let aux-x (margin * 3) + (left-column-width + center-column-width)
   xw:ask "lsgui" [
     xw:create-button "run-setups" [
       xw:set-label "Run Setup Commands"
       xw:set-commands "run-setup-relationships-once"
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin
       xw:set-width 200
     ]
@@ -85,7 +88,7 @@ to draw-aux-buttons
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
       xw:set-commands "run-go-relationships-once"
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 50
       xw:set-width 200
     ]
@@ -94,13 +97,14 @@ to draw-aux-buttons
       xw:set-label "Update commands"
       xw:set-label "Go"
       xw:set-height 50
+      xw:set-x aux-x
       xw:on-selected?-change [
         while [ [ xw:selected? ] xw:of "go-forever"]  [
           run-go-relationships-once
         ]
       ]
       
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 100
       xw:set-width 200
     ]
@@ -112,7 +116,7 @@ to draw-aux-buttons
       xw:set-maximum 1000
       xw:set-value 300
       xw:set-increment 100
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 150
       xw:set-width 200
     ]
@@ -122,7 +126,7 @@ to draw-aux-buttons
     xw:create-button "load-new-model" [
       xw:set-label "Load new model"
       xw:set-commands "load-and-setup-model user-file"
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 200
       xw:set-width 200
     ]
@@ -130,14 +134,14 @@ to draw-aux-buttons
     xw:create-button "save-work" [
       xw:set-label "Save LevelSpace System"
       xw:set-commands "save"
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 250
       xw:set-width 200
     ]
     xw:create-button "load-work" [
       xw:set-label "Load LevelSpace System"
       xw:set-commands "load"
-      xw:set-x (margin * 3) + (left-column-width * 2)
+      xw:set-x aux-x
       xw:set-y margin + 300
       xw:set-width 200
     ]
@@ -154,7 +158,7 @@ to draw-relationship-builder
       xw:set-label "Show setup or go relationships: " 
       xw:set-items ["Setup" "Go"] 
       xw:set-x margin * 2 + left-column-width
-      xw:set-width left-column-width
+      xw:set-width center-column-width
       ;; only find the height of them all except the last because that is itself
         xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       set center-column fput "setup-or-go" center-column
@@ -170,7 +174,7 @@ to draw-center
     [
       xw:set-color blue
       xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
-      xw:set-width left-column-width
+      xw:set-width center-column-width
       xw:set-x margin * 2 + left-column-width
       xw:set-height 250
       xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities      
@@ -203,7 +207,7 @@ to draw-center
       let command-id table:get the-entity "command-id"
       xw:create-relationship widget-name [
         xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
-        xw:set-width left-column-width
+        xw:set-width center-column-width
         set center-column lput (word first ?) center-column            
         xw:set-x margin * 2 + left-column-width
         xw:set-height 150
