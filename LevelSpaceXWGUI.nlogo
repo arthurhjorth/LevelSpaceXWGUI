@@ -988,7 +988,11 @@ to reset-gui
   set center-column []
   set left-column []
   draw-gui
-  xw:select-tab "lsgui"
+  ;; Stupid timing bugs. Using carefully, it consistently selects the correct tab.
+  ;; Without, it complains occasionally about no tab existing. BCH
+  carefully [
+    xw:select-tab "lsgui"
+  ] []
 end
 
 to clear-gui
