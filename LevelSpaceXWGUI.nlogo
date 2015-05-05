@@ -327,7 +327,7 @@ to-report get-arg-tuples [identity-id]
 ;    print ?
 ;    print get-eligible-arguments an-entity
     let tuple (list ? map [(word first ? ":" table:get last ? "name")] get-eligible-arguments an-entity)
-    set outer fput tuple outer
+    set outer lput tuple outer
     xw:set-height xw:height + 20
   ]
   report outer
