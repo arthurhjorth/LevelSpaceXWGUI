@@ -568,6 +568,8 @@ to run-relationship [ rel-obj ]
   
   let agent-type table:get agent-obj "type"
   let agent-model table:get agent-obj "model"
+  let agent-args map last table:get rel-obj "agent-arg-id-tuples"
+  let agent-arg-vals eval-args agent-args
   
   (cf:match agent-type
     cf:case [ ? = "observer" ] [
@@ -577,13 +579,13 @@ to run-relationship [ rel-obj ]
     cf:case [ ? = "agentset" and agent-model = cmd-model ] [
       ;; BCH - Since the arguments may be from other models, and since they may change from
       ;; agent to agent, we have to do this looping ourselves.
-      foreach (ls:report agent-model (word "[(word self)] of " (get-code agent-obj 1)) []) [
+      foreach (ls:report agent-model (word "[(word self)] of " (get-code agent-obj 1)) agent-arg-vals) [
         let cmd-arg-vals eval-args cmd-args
         (ls:ask cmd-model (word "ask " ? " [ " (get-code cmd-obj 1) " ]") cmd-arg-vals)
       ]
     ]
     cf:= "agentset" [
-      repeat (ls:report agent-model (word "count " (get-code agent-obj 1)) []) [
+      repeat (ls:report agent-model (word "count " (get-code agent-obj 1)) agent-arg-vals) [
         let cmd-arg-vals eval-args cmd-args
         (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
       ]
