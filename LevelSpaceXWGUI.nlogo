@@ -787,7 +787,7 @@ to add-model-globals [the-model]
     ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
-    let the-type "value"
+    let the-type "reporter"
     let the-entity new-entity global-name the-model global-name args the-type "OTLP"
     table:put the-entity "builtin" true
     add-entity the-entity
@@ -927,7 +927,12 @@ to-report get-from-model-all-types [model-id a-type]
 end
 
 to-report  get-eligible-arguments [an-entity]
-  report filter [table:get last ? "type" = "reporter" and table:get last ? "args" = [] ] table:to-list tasks
+  let observer? table:get an-entity "type" = "observer"
+  report filter [
+    table:get last ? "type" = "reporter" and
+    table:get last ? "args" = [] and
+    not (observer? and not member? "O" table:get last ? "contexts")
+  ] table:to-list tasks
 end
 
 to-report agent-names
