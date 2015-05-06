@@ -394,7 +394,7 @@ to save-relationship-from-gui [a-widget]
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
   ifelse a-widget = "new-rel"[
-    let rel-id 1 + max (fput -1 table:keys the-table)
+    let rel-id 1 + max (sentence [-1] (table:keys relationships) (table:keys setup-relationships))
     table:put the-table rel-id the-relationship
   ]
   [
