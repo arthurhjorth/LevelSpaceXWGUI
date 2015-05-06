@@ -1,6 +1,7 @@
 STRING_MOD=modules/String-Extension
 XW_MOD=modules/eXtraWidgets
-XW_WIDGETS=$(shell ls modules/eXtraWidgets/xw/widgets)
+XW_WIDGET_NAMES=$(shell ls modules/eXtraWidgets/xw/widgets)
+XW_WIDGETS=$(foreach widget,$(XW_WIDGET_NAMES), $(widget)/$(widget).jar)
 XW_TARGET=modules/eXtraWidgets/xw
 XW_WIDGET_JARS=$(addprefix xw/widgets/,$(XW_WIDGETS))
 XW_WIDGET_SRCS=$(addprefix modules/eXtraWidgets/xw/widgets/,$(XW_WIDGETS))
@@ -11,6 +12,9 @@ LS_MOD=modules/LevelsSpace
 LS_SRCS=$(shell find $(LS_MOD) -type f -name '*.java')
 CF_MOD=modules/ControlFlowExtension
 CF_SRCS=$(shell find $(CF_MOD) -type f -name '*.scala')
+GIT_SHA1=$(shell git log | head -1 | cut -d\  -f2 )
+GIT_SHA1_SHORT=$(shell echo $(GIT_SHA1) | sed 's/.\{32\}$$//' )
+RELEASE_NAME=release-$(GIT_SHA1_SHORT)
 SBT=env SBT_OPTS="-Xms512M -Xmx2048M -Xss6M -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=724M" sbt
 
 default: string/string.jar xw/xw.jar xw/widgets/LSWidgets/LSWidgets.jar ls/ls.jar cf/cf.jar
@@ -61,6 +65,15 @@ cf/cf.jar: $(CF_MOD)/cf.jar
 	mkdir -p cf
 	cp $(CF_MOD)/cf.jar cf/cf.jar
 
+.PHONY: release
+release: xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/widgets/LSWidgets/LSWidgets.jar LevelSpaceXWGUI.nlogo
+	mkdir -p dist/$(RELEASE_NAME)
+	$(foreach dir,$(shell find ls xw cf string | egrep jar | grep -v target | sed "s;[^/]*\.jar;;g" | uniq),mkdir -p dist/$(RELEASE_NAME)/$(dir);)
+	$(foreach jar,$?,cp "$(jar)" "dist/$(RELEASE_NAME)/$(jar)";)
+	tar -czf dist/$(RELEASE_NAME).tgz dist/$(RELEASE_NAME)
+	zip -r dist/$(RELEASE_NAME).zip dist/$(RELEASE_NAME)
+
 clean:
 	rm -rf xw ls string cf
+	rm -rf dist/$(RELEASE_NAME)
 	git submodule foreach git clean -fdX

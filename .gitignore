@@ -2,6 +2,7 @@
 /xw/
 /ls/
 /cf/
+/dist/
 *.jar
 *.swp
 target
