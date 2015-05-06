@@ -83,6 +83,7 @@ release: string/string.jar cf/cf.jar xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/wi
 	$(foreach dir,$(shell find $(EXTENSION_ROOTS)| egrep jar | grep -v target | sed "s;[^/]*\.jar;;g" | uniq),mkdir -p dist/$(RELEASE_NAME)/$(dir);)
 	$(foreach jar,$(shell find $(EXTENSION_ROOTS) -type f -name '*.jar'),cp "$(jar)" "dist/$(RELEASE_NAME)/$(jar)";)
 	cp LevelSpaceXWGUI.nlogo dist/$(RELEASE_NAME)
+	cp notebook.nls dist/$(RELEASE_NAME)
 	cd dist && tar -czf $(RELEASE_NAME).tgz $(RELEASE_NAME)
 	cd dist && zip -r $(RELEASE_NAME).zip $(RELEASE_NAME)
 
