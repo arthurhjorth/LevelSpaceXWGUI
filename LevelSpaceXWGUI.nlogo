@@ -548,19 +548,24 @@ end
 to delete-entity [an-id]
   ;; check if it is being used first
   let entity-name name-of entity-from-id an-id
-  let no-of-relationships length relationships-with-entity-id (word an-id)
-  if user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
+  let no-of-relationships length relationships-with-entity-id an-id
+  if no-of-relationships = 0 or
+     user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
   [
     custom-logging:log-message (word "deleting entity " (list an-id entity-name ))
-    ;; delete relationships first 
-    foreach map [first ?] relationships-with-entity-id (word an-id)[
-      table:remove relationships ?
-      draw-center
-    ]
+    ;; delete relationships first
+    delete-dependencies an-id
     table:remove tasks an-id
   ]
   show-it
   draw-center
+end
+
+to delete-dependencies [ entity-id ]
+  foreach map [first ?] relationships-with-entity-id entity-id [
+    table:remove relationships ?
+    draw-center
+  ]
 end
 
 to-report to-string [an-entity]
@@ -1079,12 +1084,23 @@ end
 to existing-entity-from-widget [widget-name entity-id]
   let created-entity create-entity-from-widget widget-name
   if created-entity != false [
-    custom-logging:log-message (word "created entity: " created-entity)
-  
-    table:put tasks entity-id created-entity
-    draw-center ;; redraw center to update the new entity in all drop downs
-    xw:ask "new thing" [xw:set-code "" xw:set-args ""] ;; reset the new entities widget
-    show-it
+    let make-entity? true
+    let num-rels length relationships-with-entity-id entity-id
+    if num-rels > 0 and length table:get created-entity "args" != length table:get (table:get tasks entity-id) "args" [
+      let entity-name table:get created-entity "name"
+      set make-entity? user-yes-or-no? (word entity-name " is in " num-rels " relationships. If you change its arguments, these relationships will be deleted.")
+      if make-entity? [
+        delete-dependencies entity-id
+      ]
+    ]
+    if make-entity? [
+      custom-logging:log-message (word "created entity: " created-entity)
+      
+      table:put tasks entity-id created-entity
+      draw-center ;; redraw center to update the new entity in all drop downs
+      xw:ask "new thing" [xw:set-code "" xw:set-args ""] ;; reset the new entities widget
+      show-it
+    ]
   ]
 end
 
