@@ -1,4 +1,4 @@
-extensions [ls table string xw cf]
+extensions [ls table string xw cf custom-logging]
 __includes [ "notebook.nls" ]
 
 breed [models model]

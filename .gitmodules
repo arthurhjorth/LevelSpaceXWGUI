@@ -13,3 +13,6 @@
 [submodule "modules/ControlFlowExtension"]
 	path = modules/ControlFlowExtension
 	url = git@github.com:qiemem/ControlFlowExtension.git
+[submodule "modules/Custom-Logging-Extension"]
+	path = modules/Custom-Logging-Extension
+	url = git@github.com:NetLogo/Custom-Logging-Extension.git
