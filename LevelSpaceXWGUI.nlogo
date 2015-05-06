@@ -190,7 +190,7 @@ to draw-center
       xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       xw:set-width center-column-width
       xw:set-x margin * 2 + left-column-width
-      xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities      
+      xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] filter [table:get last ? "visible"] all-agent-entities      
       xw:set-available-procedures []
       xw:set-selected-agent-reporter-index 0
       xw:on-selected-agent-reporter-change [
@@ -702,27 +702,30 @@ to-report get-eligible-interactions [an-entity]
   if the-type = "observer"[
     report map [first ?] filter [
       table:get last ? "type" = "command" and 
-      member? "O" table:get last ? "contexts" 
+      member? "O" table:get last ? "contexts"
+      and table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]  
   ;; if it's an agentset, they can call turtle commands in their own model or observer commands in other models
   if the-type = "agentset"[
     report map [first ?] filter [
-      (table:get last ? "type" = "command" and 
+      ((table:get last ? "type" = "command" and 
         member? "T" table:get last ? "contexts" and
         table:get last ? "model" = table:get an-entity "model"
         )
       or
       (table:get last ? "type" = "command" and 
         member? "O" table:get last ? "contexts"  and     
-        table:get last ? "model" != table:get an-entity "model")
+        table:get last ? "model" != table:get an-entity "model"))
+      and table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]
   if the-type = "value"[
     report filter [
-      table:get last ? "type" = "value"
+      table:get last ? "type" = "value" and
+      table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]  
