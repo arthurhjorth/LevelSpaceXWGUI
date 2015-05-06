@@ -355,10 +355,12 @@ end
 
 
 to delete-relationship [a-widget]
+  custom-logging:log-message (word "deleting go-relationship " a-widget)
   table:remove relationships a-widget
 end
 
 to delete-setup-relationship [a-widget]
+  custom-logging:log-message (word "deleting setup-relationship " a-widget)
   table:remove setup-relationships a-widget
 end
 
@@ -396,6 +398,8 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
+  
+  custom-logging:log-message (word "saving relationship: " (list the-relationship relationship-type a-widget))
   
   ifelse a-widget = "new-rel"[
     let rel-id 1 + max (sentence [-1] (table:keys relationships) (table:keys setup-relationships))
@@ -547,6 +551,7 @@ to delete-entity [an-id]
   let no-of-relationships length relationships-with-entity-id (word an-id)
   if user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
   [
+    custom-logging:log-message (word "deleting entity " (list an-id entity-name ))
     ;; delete relationships first 
     foreach map [first ?] relationships-with-entity-id (word an-id)[
       table:remove relationships ?
@@ -1058,7 +1063,9 @@ to-report create-entity-from-widget [ widget-name ]
   ;; @todo: we need a dropdown for this
   
   let the-type current-type
-
+  
+  custom-logging:log-message (word "tried creating entity: " (list model-id name code args-string the-type widget-name))
+  
   let created-entity false
   carefully [
     set created-entity new-entity name model-id code args-list the-type "OTPL"
@@ -1072,6 +1079,8 @@ end
 to existing-entity-from-widget [widget-name entity-id]
   let created-entity create-entity-from-widget widget-name
   if created-entity != false [
+    custom-logging:log-message (word "created entity: " created-entity)
+  
     table:put tasks entity-id created-entity
     draw-center ;; redraw center to update the new entity in all drop downs
     xw:ask "new thing" [xw:set-code "" xw:set-args ""] ;; reset the new entities widget
