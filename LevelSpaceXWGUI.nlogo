@@ -457,7 +457,7 @@ to draw-entity-lister
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput "new thing" left-column
       xw:set-color blue
-      xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\" xw:ask \"new thing\" [xw:set-code \"\"]") 
+      xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\" ") 
     ]
     
     
@@ -1020,7 +1020,7 @@ to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
-  ifelse entity-id = "new thing"[
+  ifelse entity-id = "new"[
     new-entity-from-widget a-widget-name 
   ] [
     existing-entity-from-widget a-widget-name entity-id
@@ -1054,6 +1054,7 @@ to existing-entity-from-widget [widget-name entity-id]
   if created-entity != false [
     table:put tasks entity-id created-entity
     draw-center ;; redraw center to update the new entity in all drop downs
+    xw:ask "new thing" [xw:set-code "" xw:set-args ""] ;; reset the new entities widget
     show-it
   ]
 end
@@ -1063,6 +1064,7 @@ to new-entity-from-widget [widget-name]
   if created-entity != false [  
     add-entity created-entity
     draw-center ;; redraw center to update the new entity in all drop downs    
+    xw:ask "new thing" [xw:set-code "" xw:set-args ""] ;; reset the new entities widget
     show-it
   ]
 end
