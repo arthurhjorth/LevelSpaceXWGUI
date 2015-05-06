@@ -928,10 +928,12 @@ end
 
 to-report  get-eligible-arguments [an-entity]
   let observer? table:get an-entity "type" = "observer"
+  let model table:get an-entity "model"
   report filter [
     table:get last ? "type" = "reporter" and
     table:get last ? "args" = [] and
-    not (observer? and not member? "O" table:get last ? "contexts")
+    (not observer? or member? "O" table:get last ? "contexts") and
+    (model = table:get last ? "model" or member? "O" table:get last ? "contexts")
   ] table:to-list tasks
 end
 
