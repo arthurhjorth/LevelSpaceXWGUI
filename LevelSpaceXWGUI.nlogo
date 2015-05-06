@@ -516,8 +516,11 @@ to add-entity-to-col [an-entity ]
       xw:set-args string:from-list get-args the-entity " "
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
-;      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
-;      xw:set-delete-command (word "delete-entity " entity-id)
+      xw:on-visible?-change [
+        table:put the-entity "visible" ?
+        draw-center
+      ]
+      xw:set-visible? table:get the-entity "visible"
     ]
   ]
   [
@@ -933,7 +936,8 @@ to-report  get-eligible-arguments [an-entity]
     table:get last ? "type" = "reporter" and
     table:get last ? "args" = [] and
     (not observer? or member? "O" table:get last ? "contexts") and
-    (model = table:get last ? "model" or member? "O" table:get last ? "contexts")
+    (model = table:get last ? "model" or member? "O" table:get last ? "contexts") and
+    table:get last ? "visible"
   ] table:to-list tasks
 end
 
