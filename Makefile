@@ -75,7 +75,7 @@ custom-logging/custom-logging.jar: $(CL_MOD)/custom-logging.jar
 	cp $(CL_MOD)/custom-logging.jar custom-logging/custom-logging.jar
 
 .PHONY: release
-release: string/string.jar cf/cf.jar xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/widgets/LSWidgets/LSWidgets.jar LevelSpaceXWGUI.nlogo
+release: string/string.jar cf/cf.jar xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/widgets/LSWidgets/LSWidgets.jar custom-logging/custom-logging.jar LevelSpaceXWGUI.nlogo
 	mkdir -p dist/$(RELEASE_NAME)
 	$(foreach dir,$(shell find ls xw cf string | egrep jar | grep -v target | sed "s;[^/]*\.jar;;g" | uniq),mkdir -p dist/$(RELEASE_NAME)/$(dir);)
 	$(foreach jar,$?,cp "$(jar)" "dist/$(RELEASE_NAME)/$(jar)";)
