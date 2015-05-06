@@ -66,7 +66,7 @@ cf/cf.jar: $(CF_MOD)/cf.jar
 	cp $(CF_MOD)/cf.jar cf/cf.jar
 
 .PHONY: release
-release: xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/widgets/LSWidgets/LSWidgets.jar LevelSpaceXWGUI.nlogo
+release: string/string.jar cf/cf.jar xw/xw.jar $(XW_WIDGET_JARS) ls/ls.jar xw/widgets/LSWidgets/LSWidgets.jar LevelSpaceXWGUI.nlogo
 	mkdir -p dist/$(RELEASE_NAME)
 	$(foreach dir,$(shell find ls xw cf string | egrep jar | grep -v target | sed "s;[^/]*\.jar;;g" | uniq),mkdir -p dist/$(RELEASE_NAME)/$(dir);)
 	$(foreach jar,$?,cp "$(jar)" "dist/$(RELEASE_NAME)/$(jar)";)
