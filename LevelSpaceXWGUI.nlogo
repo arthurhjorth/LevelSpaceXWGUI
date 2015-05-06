@@ -254,7 +254,7 @@ to draw-center
           xw:ask temp-widget-name [
             xw:set-selected-procedure-arguments []
             xw:set-selected-agentset-arguments []
-            ]
+          ]
         ]
         xw:on-selected-procedure-change [
           update-command-args temp-widget-name
@@ -274,7 +274,7 @@ to draw-center
         xw:set-selected-agentset-argument-indices agent-arg-item-tuples
               
         let command-arg-id-tuples table:get the-entity "command-arg-id-tuples"
-        let command-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "command-id" last ?))] command-arg-id-tuples
+        let command-arg-item-tuples map [(list (first ?) (item-from-entity-and-id entity-from-id table:get the-entity "agent-id" last ?))] command-arg-id-tuples
         xw:set-selected-procedure-argument-indices command-arg-item-tuples
         
 
@@ -345,12 +345,12 @@ to-report get-arg-tuples-with-deps [identity-id-elig identity-id-args ]
   let arg-entity entity-from-id identity-id-args
   let the-args get-args arg-entity
   let outer []
+  let eligible-args get-eligible-arguments eligibility-entity
   foreach the-args [
-    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] get-eligible-arguments eligibility-entity)
+    let tuple (list ? map [(word table:get last ? "model"":" table:get last ? "name")] eligible-args)
     set outer lput tuple outer
   ]
   report outer
-  
 end
 
 
@@ -384,7 +384,8 @@ to save-relationship-from-gui [a-widget]
   
   let command-args get-args command-entity
   let command-arg-indices [xw:selected-procedure-argument-indices ] xw:of a-widget 
-  let command-actuals actuals-from-item-tuples command-entity command-arg-indices
+  ; The agent determined which arguments are eligible. BCH 5/6/2015
+  let command-actuals actuals-from-item-tuples acting-entity command-arg-indices
   
   ;; and create a relationship (a table with all the info we want )
   let the-relationship add-relationship "N/A" acting-entity-name acting-actuals command-entity-name command-actuals command-args acting-args acting-entity-id command-entity-id
@@ -392,7 +393,7 @@ to save-relationship-from-gui [a-widget]
   let relationship-type xw:get "setup-or-go"  
 
   ;;AH: instead, we will create a list of args + the ENTITY id (not just their item number). We can do a loookup later.
-  let command-arg-id-tuples map [(list first ? (arg-from-entity-and-index command-entity last ?) )] command-arg-indices
+  let command-arg-id-tuples map [(list first ? (arg-from-entity-and-index acting-entity last ?) )] command-arg-indices
   let agent-arg-id-tuples map [(list first ? (arg-from-entity-and-index acting-entity last ?) )] agent-arg-indices
   
   table:put the-relationship "command-arg-id-tuples" command-arg-id-tuples
@@ -945,13 +946,14 @@ end
 to-report  get-eligible-arguments [an-entity]
   let observer? table:get an-entity "type" = "observer"
   let model table:get an-entity "model"
-  report filter [
+  let args filter [
     table:get last ? "type" = "reporter" and
     table:get last ? "args" = [] and
     (not observer? or member? "O" table:get last ? "contexts") and
     (model = table:get last ? "model" or member? "O" table:get last ? "contexts") and
     table:get last ? "visible"
   ] table:to-list tasks
+  report args
 end
 
 to-report agent-names
