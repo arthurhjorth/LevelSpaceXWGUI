@@ -190,7 +190,7 @@ to draw-center
       xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       xw:set-width center-column-width
       xw:set-x margin * 2 + left-column-width
-      xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] all-agent-entities      
+      xw:set-available-agent-reporters map [(word table:get last ? "model" ":" name-of last ?)] filter [table:get last ? "visible"] all-agent-entities      
       xw:set-available-procedures []
       xw:set-selected-agent-reporter-index 0
       xw:on-selected-agent-reporter-change [
@@ -516,8 +516,11 @@ to add-entity-to-col [an-entity ]
       xw:set-args string:from-list get-args the-entity " "
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
-;      xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  " show-it")
-;      xw:set-delete-command (word "delete-entity " entity-id)
+      xw:on-visible?-change [
+        table:put the-entity "visible" ?
+        draw-center
+      ]
+      xw:set-visible? table:get the-entity "visible"
     ]
   ]
   [
@@ -699,27 +702,30 @@ to-report get-eligible-interactions [an-entity]
   if the-type = "observer"[
     report map [first ?] filter [
       table:get last ? "type" = "command" and 
-      member? "O" table:get last ? "contexts" 
+      member? "O" table:get last ? "contexts"
+      and table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]  
   ;; if it's an agentset, they can call turtle commands in their own model or observer commands in other models
   if the-type = "agentset"[
     report map [first ?] filter [
-      (table:get last ? "type" = "command" and 
+      ((table:get last ? "type" = "command" and 
         member? "T" table:get last ? "contexts" and
         table:get last ? "model" = table:get an-entity "model"
         )
       or
       (table:get last ? "type" = "command" and 
         member? "O" table:get last ? "contexts"  and     
-        table:get last ? "model" != table:get an-entity "model")
+        table:get last ? "model" != table:get an-entity "model"))
+      and table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]
   if the-type = "value"[
     report filter [
-      table:get last ? "type" = "value"
+      table:get last ? "type" = "value" and
+      table:get last ? "visible"
     ] 
     table:to-list tasks 
   ]  
@@ -787,7 +793,7 @@ to add-model-globals [the-model]
     ;; not sure if these should be reporters (which they technically are) or 'globals' since we probably don't want to SET 
     ;; reporters, but we may want to set globals?
     ;; setting to value now, might not be right though......
-    let the-type "value"
+    let the-type "reporter"
     let the-entity new-entity global-name the-model global-name args the-type "OTLP"
     table:put the-entity "builtin" true
     add-entity the-entity
@@ -927,7 +933,15 @@ to-report get-from-model-all-types [model-id a-type]
 end
 
 to-report  get-eligible-arguments [an-entity]
-  report filter [table:get last ? "type" = "reporter" and table:get last ? "args" = [] ] table:to-list tasks
+  let observer? table:get an-entity "type" = "observer"
+  let model table:get an-entity "model"
+  report filter [
+    table:get last ? "type" = "reporter" and
+    table:get last ? "args" = [] and
+    (not observer? or member? "O" table:get last ? "contexts") and
+    (model = table:get last ? "model" or member? "O" table:get last ? "contexts") and
+    table:get last ? "visible"
+  ] table:to-list tasks
 end
 
 to-report agent-names
