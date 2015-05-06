@@ -29,6 +29,7 @@ globals [
   relationship-serial
   setup-relationships-serial
   base-relationship-height
+  static-widget-color
 ]
 
 to startup
@@ -61,6 +62,7 @@ to setup
   set center-column-width 450
   set center-column []
   set base-relationship-height 110
+  set static-widget-color blue + 1
   
   set margin 10
   
@@ -113,6 +115,7 @@ to draw-aux-buttons
 
 
      xw:create-slider "run-speed" [
+      xw:set-color static-widget-color
       xw:set-label "Run Step Delay"
       xw:set-units "ms"
       xw:set-maximum 1000
@@ -157,6 +160,7 @@ to draw-relationship-builder
   xw:ask "lsgui" 
   [
     xw:create-chooser "setup-or-go" [
+      xw:set-color static-widget-color
       xw:set-label "Show setup or go relationships: " 
       xw:set-items ["Setup" "Go"] 
       xw:set-x margin * 2 + left-column-width
@@ -182,7 +186,7 @@ to draw-center
   clear-center
     xw:create-relationship "new-rel" 
     [
-      xw:set-color blue
+      xw:set-color static-widget-color
       xw:set-y margin + sum map [[xw:height] xw:of ?] center-column
       xw:set-width center-column-width
       xw:set-x margin * 2 + left-column-width
@@ -426,6 +430,7 @@ to draw-entity-lister
   xw:ask "lsgui" [
     ;; create the models chooser
     xw:create-chooser "Models" [
+      xw:set-color static-widget-color
       xw:set-label "Models" 
       xw:set-items map [name-of entity-from-id ?] map [first ?] all-observers  
       xw:set-width left-column-width
@@ -436,6 +441,7 @@ to draw-entity-lister
     ]
     
     xw:create-chooser "data-types" [
+      xw:set-color static-widget-color
       xw:set-label "Show this model's entities of type: " 
       xw:set-items ["Extended Agents" "Reporters" "Commands"] 
       xw:set-selected-item "Extended Agents"
@@ -456,7 +462,7 @@ to draw-entity-lister
       xw:set-width left-column-width
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput "new thing" left-column
-      xw:set-color blue
+      xw:set-color static-widget-color
       xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\" ") 
     ]
     
