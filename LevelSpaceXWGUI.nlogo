@@ -457,7 +457,7 @@ to draw-entity-lister
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput "new thing" left-column
       xw:set-color blue
-      xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\"") 
+      xw:set-save-command (word "save-entity-from-widget \"new thing\" \"new\" xw:ask \"new thing\" [xw:set-code \"\"]") 
     ]
     
     
@@ -1020,7 +1020,7 @@ to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
-  ifelse entity-id = "new"[
+  ifelse entity-id = "new thing"[
     new-entity-from-widget a-widget-name 
   ] [
     existing-entity-from-widget a-widget-name entity-id
