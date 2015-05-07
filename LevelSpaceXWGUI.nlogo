@@ -588,7 +588,13 @@ to run-relationship [ rel-obj ]
   (cf:match agent-type
     cf:= "observer" [
       let cmd-arg-vals eval-args "x" "" cmd-args
-      (ls:ask cmd-model (get-code cmd-obj 1) cmd-arg-vals)
+      let code get-code cmd-obj 1
+      ifelse agent-model = "x" [
+        ;; Kinda gross, but we need to be able to run with task args
+        (run (runresult (word "task [" code "]")) cmd-arg-vals)
+      ] [        
+        (ls:ask cmd-model code cmd-arg-vals)
+      ]
     ]
     cf:case [ ? = "agentset" and agent-model = cmd-model ] [
       ;; BCH - Since the arguments may be from other models, and since they may change from
