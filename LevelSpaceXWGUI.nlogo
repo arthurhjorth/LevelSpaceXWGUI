@@ -206,7 +206,7 @@ to draw-center
         update-command-args "new-rel"
         layout-center
       ]
-      xw:set-save-command "save-relationship-from-gui \"new-rel\" draw-center"
+      xw:set-save-command "save-relationship-from-gui \"new-rel\""
 
       set center-column lput "new-rel" center-column 
       resize-relationship
@@ -287,7 +287,7 @@ to draw-center
         xw:set-run-command (word "run-setup-relationship-by-id " relationship-id)
       ]
       
-      xw:set-save-command (word "save-relationship-from-gui \"" relationship-id  "\"     xw:remove \"" relationship-id  "\" set center-column remove \"" relationship-id  "\" center-column   draw-center")
+      xw:set-save-command (word "save-relationship-from-gui \"" relationship-id  "\" xw:remove \"" relationship-id  "\" set center-column remove \"" relationship-id  "\" center-column   draw-center")
       ]
     ]
 end
@@ -410,7 +410,7 @@ to save-relationship-from-gui [a-widget]
     ;; runresult because a-widget is a string, we want a number
     table:put the-table (runresult a-widget) the-relationship
   ]
-  
+  draw-center
 end
 
 
@@ -522,8 +522,10 @@ to add-entity-to-col [an-entity ]
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
       xw:on-visible?-change [
-        table:put the-entity "visible" ?
-        draw-center
+        if table:get the-entity "visible" != xw:visible? [
+          table:put the-entity "visible" xw:visible?
+          draw-center
+        ]
       ]
       xw:set-visible? table:get the-entity "visible"
     ]
@@ -565,7 +567,6 @@ end
 to delete-dependencies [ entity-id ]
   foreach map [first ?] relationships-with-entity-id entity-id [
     table:remove relationships ?
-    draw-center
   ]
 end
 
