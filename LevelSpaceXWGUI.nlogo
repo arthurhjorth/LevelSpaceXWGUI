@@ -1324,79 +1324,79 @@ to write-list [atable afilename]
   file-close-all
 end
 
-to save
-  write-list tasks "levelspace_tasks.txt"
-  write-list relationships "levelspace_go_rel.txt"
-  write-list setup-relationships "levelspace_setup_rel.txt"
+
+to save-to-one-file 
+  let filename user-input "What do you want to call your LevelSpace System?"
+  if file-exists? filename [file-delete filename]
+  write-all filename "tasks"
+  write-all filename "relationships"
+  write-all filename "setup-relationships"
 end
 
-to load
-  ;; first call setup to reset everything
+to write-all [filename table-name]
+  file-close-all
+  file-open filename
+  let print-list []
+  let table runresult table-name
+  foreach table:to-list table [
+    let entity-table last ?
+;    table:remove the-table "task" ;; AH: this removes it from the actual table. that doesn't work. we can just ignore it in the saved list
+;; so we "clone" it by turning into a list, then into a table, remove it, and then into a list for printing
+    let clone-list table:to-list entity-table
+    let clone-table table:from-list clone-list
+;    if member? "task" table:keys clone-table [show "before: " show clone-table table:remove clone-table "task" show "after:" show clone-table]
+    table:remove clone-table "task"
+    table:remove clone-table "agent-actuals"
+    table:remove clone-table "command-actuals"
+    table:put clone-table "table" table-name
+    set print-list lput (list first ? table:to-list clone-table) print-list
+  ]
+  file-write print-list
+  file-close-all
+end
+
+to load-from-one-file
+  let load-file user-file 
   setup
-  
-  ;; open models and create entities first
-  file-open "levelspace_tasks.txt"
+  file-open load-file
   while [not file-at-end?][
-    ;; get a list
-    let the-input file-read-line
-    set the-input runresult the-input
+    let the-input file-read
     foreach the-input [
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
       let the-id first ?
       let the-task table:from-list last ?
-      let the-type table:get the-task  "type"
-      if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
-        load-model table:get the-task "path" the-id
+      let the-table-name table:get the-task "table"
+      let the-table runresult the-table-name
+      if the-table-name = "tasks"[
+        let the-type table:get the-task "type"
+        if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
+          load-model table:get the-task "path" the-id
+        ]
+        if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
+          load-task the-task the-id
+        ]      
       ]
-      if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
-        load-task the-task the-id
-      ]
-    ]
-  ]
-  file-close-all
-  ;; then create relationships
-   foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
-   [
-     let relationship-type 0
-     if ? =  "levelspace_go_rel.txt" [ set relationship-type "Go"]
-     if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Setup"]
-     
-     
-     file-open ?
-     while [not file-at-end?][
-       ;; get a list
-       let the-input file-read-line
-       set the-input runresult the-input
-       foreach the-input [
-         let the-id first ?
-         let the-table table:from-list last ?
-
-         ;;Now  get the interaction-task between these two
-         ;; actuals here are a list of tasks, so we first get the tasks from 
-         let acting-entity-id table:get the-table "agent-id"
+      if the-table-name = "relationships" or the-table-name = "setup-relationships"[
+         let acting-entity-id table:get the-task "agent-id"
          let acting-entity entity-from-id acting-entity-id
-         let command-entity-id table:get the-table "command-id"
+         let command-entity-id table:get the-task "command-id"
          let command-entity entity-from-id command-entity-id
          
-         let acting-arg-ids table:get the-table "agent-arg-id-tuples"
+         let acting-arg-ids table:get the-task "agent-arg-id-tuples"
          let acting-actuals map [get-task entity-from-id last ?] acting-arg-ids
 
-         let command-arg-ids table:get the-table "command-arg-id-tuples"
+         let command-arg-ids table:get the-task "command-arg-id-tuples"
          let command-actuals map [get-task entity-from-id last ?] command-arg-ids
 
 ;         ;; and create a relationship (a table with all the info we want )
          let the-relationship add-relationship "N/A" (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
          
-         ;; and now save the arg-id tupes
-
          table:put the-relationship "command-arg-id-tuples" command-arg-ids
          table:put the-relationship "agent-arg-id-tuples" acting-arg-ids
-         let the-relationship-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
-         table:put the-relationship-table the-id the-relationship
-       ]
-     ]     
-   ]
-   
+         table:put the-table the-id the-relationship
+      ]
+    ]
+  ]
    ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    ;; there may be zero relationships saved. So we need to first check if there are any, and otherwise just report 0
@@ -1404,6 +1404,7 @@ to load
    set relationship-serial ifelse-value (length relationship-ids > 0) [max relationship-ids + 1] [0]
    reset-gui
 end
+
 
 to load-task [a-table the-id]
   let the-name table:get a-table "name"
