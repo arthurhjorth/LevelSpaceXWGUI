@@ -1060,6 +1060,7 @@ end
 
 to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
+  if entity-name-exists-in-model? the-name get-model entity xw:get "Models" [user-message (word "There is already a thing called  " the-name ". Please give it another name.") stop]
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
@@ -1461,6 +1462,11 @@ to log-to-file [message]
   file-open "LevelSpsdace_logging.txt"
   file-write (list date-and-time message)
   file-close
+end
+
+to-report entity-name-exists-in-model? [aname a-model-id]
+  ;; if the name already exists in entities, report true
+  report member? aname map [table:get ? "name"] filter [table:get ? "model" = a-model-id] map [last ? ] table:to-list tasks
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
