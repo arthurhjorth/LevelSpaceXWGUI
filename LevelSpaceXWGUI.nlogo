@@ -1,4 +1,4 @@
-extensions [ls table string xw cf custom-logging]
+extensions [ls table string xw cf ]
 __includes [ "notebook.nls" ]
 
 breed [models model]
@@ -68,6 +68,8 @@ to setup
   
   setup-notebook
   reset-gui
+  file-open ("LevelSpace_logging.txt")
+  log-to-file (list "setup run")
   reset-ticks
 end
 
@@ -355,12 +357,12 @@ end
 
 
 to delete-relationship [a-widget]
-  custom-logging:log-message (word "deleting go-relationship " a-widget)
+  log-to-file (list "deleting go-relationship " a-widget table:get relationships a-widget)
   table:remove relationships a-widget
 end
 
 to delete-setup-relationship [a-widget]
-  custom-logging:log-message (word "deleting setup-relationship " a-widget)
+  log-to-file (list "deleting setup-relationship " a-widget table:get setup-relationships a-widget)
   table:remove setup-relationships a-widget
 end
 
@@ -400,7 +402,7 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
-  custom-logging:log-message (word "saving relationship: " (list the-relationship relationship-type a-widget))
+  log-to-file (list "saving relationships" (list the-relationship relationship-type a-widget))
   
   ifelse a-widget = "new-rel"[
     let rel-id 1 + max (sentence [-1] (table:keys relationships) (table:keys setup-relationships))
@@ -555,7 +557,7 @@ to delete-entity [an-id]
   if no-of-relationships = 0 or
      user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
   [
-    custom-logging:log-message (word "deleting entity " (list an-id entity-name ))
+    log-to-file (word "deleting entity " (list an-id entity-name table:get tasks an-id))
     ;; delete relationships first
     delete-dependencies an-id
     table:remove tasks an-id
@@ -767,6 +769,7 @@ to load-and-setup-model [model-path]
     add-model-breeds the-model
     ;; and breed variables
     add-model-breed-vars the-model
+    log-to-file (list "model loaded" model-path)
     reset-gui
   ]
 end
@@ -1078,7 +1081,7 @@ to-report create-entity-from-widget [ widget-name ]
   
   let the-type current-type
   
-  custom-logging:log-message (word "tried creating entity: " (list model-id name code args-string the-type widget-name))
+;  log-to-file (list "tried creating entity: " (list model-id name code args-string the-type widget-name))
   
   let created-entity false
   carefully [
@@ -1086,7 +1089,12 @@ to-report create-entity-from-widget [ widget-name ]
   ] [
     xw:ask widget-name [xw:set-color red]
     user-message error-message
+    report false
   ]
+
+  let succeeded? ifelse-value (created-entity = false) [false][true]
+  log-to-file (list "tried creating entity: " (list model-id name code args-string the-type widget-name succeeded?))
+
   report created-entity
 end
 
@@ -1103,7 +1111,7 @@ to existing-entity-from-widget [widget-name entity-id]
       ]
     ]
     if make-entity? [
-      custom-logging:log-message (word "created entity: " created-entity)
+      log-to-file (list "created entity" created-entity)
       
       table:put tasks entity-id created-entity
       draw-center ;; redraw center to update the new entity in all drop downs
@@ -1326,11 +1334,15 @@ end
 
 
 to save-to-one-file 
+  file-close-all
   let filename user-input "What do you want to call your LevelSpace System?"
   if file-exists? filename [file-delete filename]
   write-all filename "tasks"
   write-all filename "relationships"
   write-all filename "setup-relationships"
+  file-close-all
+  file-open "LevelSpace_logging.txt"
+  log-to-file (list "everything saved")
 end
 
 to write-all [filename table-name]
@@ -1356,6 +1368,7 @@ to write-all [filename table-name]
 end
 
 to load-from-one-file
+  file-close-all
   let load-file user-file 
   setup
   file-open load-file
@@ -1397,12 +1410,15 @@ to load-from-one-file
       ]
     ]
   ]
-   ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
+   ; set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    ;; there may be zero relationships saved. So we need to first check if there are any, and otherwise just report 0
    let relationship-ids reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )
    set relationship-serial ifelse-value (length relationship-ids > 0) [max relationship-ids + 1] [0]
    reset-gui
+   ;; finally close the input file and open the logging file again
+   file-close-all
+   file-open "LevelSpace_logging.txt"
 end
 
 
@@ -1439,6 +1455,12 @@ to load-model [apath the-id]
   table:put observer-entity "builtin" true
   table:put observer-entity "path" apath
   add-entity-with-id observer-entity the-id
+end
+
+to log-to-file [message]
+  file-open "LevelSpsdace_logging.txt"
+  file-write (list date-and-time message)
+  file-close
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
