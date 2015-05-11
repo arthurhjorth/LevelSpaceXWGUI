@@ -1,4 +1,4 @@
-extensions [ls table string xw cf custom-logging]
+extensions [ls table string xw cf ]
 __includes [ "notebook.nls" ]
 
 breed [models model]
@@ -68,6 +68,8 @@ to setup
   
   setup-notebook
   reset-gui
+  file-open ("LevelSpace_logging.txt")
+  log-to-file (list "setup run")
   reset-ticks
 end
 
@@ -103,6 +105,7 @@ to draw-aux-buttons
       xw:set-height 50
       xw:set-x aux-x
       xw:on-selected?-change [
+        log-to-file (list "go" xw:selected? relationships )
         while [ [ xw:selected? ] xw:of "go-forever"]  [
           run-go-relationships-once
         ]
@@ -138,14 +141,14 @@ to draw-aux-buttons
 
     xw:create-button "save-work" [
       xw:set-label "Save LevelSpace System"
-      xw:set-commands "save"
+      xw:set-commands "save-to-one-file"
       xw:set-x aux-x
       xw:set-y margin + 250
       xw:set-width 200
     ]
     xw:create-button "load-work" [
       xw:set-label "Load LevelSpace System"
-      xw:set-commands "load"
+      xw:set-commands "load-from-one-file"
       xw:set-x aux-x
       xw:set-y margin + 300
       xw:set-width 200
@@ -355,12 +358,12 @@ end
 
 
 to delete-relationship [a-widget]
-  custom-logging:log-message (word "deleting go-relationship " a-widget)
+  log-to-file (list "deleting go-relationship " a-widget table:get relationships a-widget)
   table:remove relationships a-widget
 end
 
 to delete-setup-relationship [a-widget]
-  custom-logging:log-message (word "deleting setup-relationship " a-widget)
+  log-to-file (list "deleting setup-relationship " a-widget table:get setup-relationships a-widget)
   table:remove setup-relationships a-widget
 end
 
@@ -400,7 +403,7 @@ to save-relationship-from-gui [a-widget]
   table:put the-relationship "agent-arg-id-tuples" agent-arg-id-tuples
   let the-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
   
-  custom-logging:log-message (word "saving relationship: " (list the-relationship relationship-type a-widget))
+  log-to-file (list "saving relationships" (list the-relationship relationship-type a-widget))
   
   ifelse a-widget = "new-rel"[
     let rel-id 1 + max (sentence [-1] (table:keys relationships) (table:keys setup-relationships))
@@ -555,7 +558,7 @@ to delete-entity [an-id]
   if no-of-relationships = 0 or
      user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
   [
-    custom-logging:log-message (word "deleting entity " (list an-id entity-name ))
+    log-to-file (word "deleting entity " (list an-id entity-name table:get tasks an-id))
     ;; delete relationships first
     delete-dependencies an-id
     table:remove tasks an-id
@@ -767,6 +770,7 @@ to load-and-setup-model [model-path]
     add-model-breeds the-model
     ;; and breed variables
     add-model-breed-vars the-model
+    log-to-file (list "model loaded" model-path)
     reset-gui
   ]
 end
@@ -1060,6 +1064,7 @@ to save-entity-from-widget [a-widget-name entity-id]
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
+    if entity-name-exists-in-model? the-name get-model entity xw:get "Models" [user-message (word "There is already a thing called  " the-name ". Please give it another name.") stop]
     new-entity-from-widget a-widget-name 
   ] [
     existing-entity-from-widget a-widget-name entity-id
@@ -1078,15 +1083,20 @@ to-report create-entity-from-widget [ widget-name ]
   
   let the-type current-type
   
-  custom-logging:log-message (word "tried creating entity: " (list model-id name code args-string the-type widget-name))
+;  log-to-file (list "tried creating entity: " (list model-id name code args-string the-type widget-name))
   
   let created-entity false
   carefully [
     set created-entity new-entity name model-id code args-list the-type "OTPL"
   ] [
     xw:ask widget-name [xw:set-color red]
+      log-to-file (list "failed creating entity: " (list model-id name code args-string the-type widget-name))
     user-message error-message
+    report false
   ]
+
+  log-to-file (list "succeeded creating entity: " (list model-id name code args-string the-type widget-name))
+
   report created-entity
 end
 
@@ -1103,7 +1113,7 @@ to existing-entity-from-widget [widget-name entity-id]
       ]
     ]
     if make-entity? [
-      custom-logging:log-message (word "created entity: " created-entity)
+      log-to-file (list "created entity" created-entity)
       
       table:put tasks entity-id created-entity
       draw-center ;; redraw center to update the new entity in all drop downs
@@ -1153,10 +1163,12 @@ to-report current-type
 end
 
 to run-relationship-by-id [id]
+  log-to-file (list "run-relationship-by-id"  table:get relationships id)
   run-relationship table:get relationships id
 end
 
 to run-setup-relationship-by-id [id]
+  log-to-file (list "run-setup-relationship-by-id"  table:get setup-relationships id)
   run-relationship table:get setup-relationships id
 end
 
@@ -1170,16 +1182,20 @@ end
 
 
 to run-setup-relationships-once
+  log-to-file (list "run-setup-relationships-once")
   run-relationships-once setup-relationships
   reset-ticks
 end
 
 to run-go-relationships-once
+  log-to-file (list "run-go-relationships-once")
   run-relationships-once relationships
   tick
 end
 
 to run-relationships-once [ the-relationships ]
+;  log-to-file (list "run-the-relationships-once" the-relationships)
+
   let delay (xw:get "run-speed") / 2000
   let still-need-to-delay? false
   if (delay > 0) [ 
@@ -1324,86 +1340,95 @@ to write-list [atable afilename]
   file-close-all
 end
 
-to save
-  write-list tasks "levelspace_tasks.txt"
-  write-list relationships "levelspace_go_rel.txt"
-  write-list setup-relationships "levelspace_setup_rel.txt"
+
+to save-to-one-file 
+  file-close-all
+  let filename user-input "What do you want to call your LevelSpace System?"
+  if file-exists? filename [file-delete filename]
+  write-all filename "tasks"
+  write-all filename "relationships"
+  write-all filename "setup-relationships"
+  file-close-all
+  file-open "LevelSpace_logging.txt"
+  log-to-file (list "everything saved" tasks relationships setup-relationships)
 end
 
-to load
-  ;; first call setup to reset everything
+to write-all [filename table-name]
+  file-close-all
+  file-open filename
+  let print-list []
+  let table runresult table-name
+  foreach table:to-list table [
+    let entity-table last ?
+;    table:remove the-table "task" ;; AH: this removes it from the actual table. that doesn't work. we can just ignore it in the saved list
+;; so we "clone" it by turning into a list, then into a table, remove it, and then into a list for printing
+    let clone-list table:to-list entity-table
+    let clone-table table:from-list clone-list
+;    if member? "task" table:keys clone-table [show "before: " show clone-table table:remove clone-table "task" show "after:" show clone-table]
+    table:remove clone-table "task"
+    table:remove clone-table "agent-actuals"
+    table:remove clone-table "command-actuals"
+    table:put clone-table "table" table-name
+    set print-list lput (list first ? table:to-list clone-table) print-list
+  ]
+  file-write print-list
+  file-close-all
+end
+
+to load-from-one-file
+  file-close-all
+  let load-file user-file 
   setup
-  
-  ;; open models and create entities first
-  file-open "levelspace_tasks.txt"
+  file-open load-file
   while [not file-at-end?][
-    ;; get a list
-    let the-input file-read-line
-    set the-input runresult the-input
+    let the-input file-read
     foreach the-input [
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
       let the-id first ?
       let the-task table:from-list last ?
-      let the-type table:get the-task  "type"
-      if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
-        load-model table:get the-task "path" the-id
+      let the-table-name table:get the-task "table"
+      let the-table runresult the-table-name
+      if the-table-name = "tasks"[
+        let the-type table:get the-task "type"
+        if the-type = "observer" and table:get the-task "name" != "LevelSpace" [
+          load-model table:get the-task "path" the-id
+        ]
+        if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
+          load-task the-task the-id
+        ]      
       ]
-      if the-type = "command" or the-type = "agentset" or the-type = "reporter" [
-        load-task the-task the-id
-      ]
-    ]
-  ]
-  file-close-all
-  ;; then create relationships
-   foreach ["levelspace_go_rel.txt" "levelspace_setup_rel.txt"]
-   [
-     let relationship-type 0
-     if ? =  "levelspace_go_rel.txt" [ set relationship-type "Go"]
-     if ? =  "levelspace_setup_rel.txt" [ set relationship-type "Setup"]
-     
-     
-     file-open ?
-     while [not file-at-end?][
-       ;; get a list
-       let the-input file-read-line
-       set the-input runresult the-input
-       foreach the-input [
-         let the-id first ?
-         let the-table table:from-list last ?
-
-         ;;Now  get the interaction-task between these two
-         ;; actuals here are a list of tasks, so we first get the tasks from 
-         let acting-entity-id table:get the-table "agent-id"
+      if the-table-name = "relationships" or the-table-name = "setup-relationships"[
+         let acting-entity-id table:get the-task "agent-id"
          let acting-entity entity-from-id acting-entity-id
-         let command-entity-id table:get the-table "command-id"
+         let command-entity-id table:get the-task "command-id"
          let command-entity entity-from-id command-entity-id
          
-         let acting-arg-ids table:get the-table "agent-arg-id-tuples"
+         let acting-arg-ids table:get the-task "agent-arg-id-tuples"
          let acting-actuals map [get-task entity-from-id last ?] acting-arg-ids
 
-         let command-arg-ids table:get the-table "command-arg-id-tuples"
+         let command-arg-ids table:get the-task "command-arg-id-tuples"
          let command-actuals map [get-task entity-from-id last ?] command-arg-ids
 
 ;         ;; and create a relationship (a table with all the info we want )
          let the-relationship add-relationship "N/A" (name-of acting-entity) acting-actuals (name-of command-entity) command-actuals (get-args command-entity) (get-args acting-entity) acting-entity-id command-entity-id
          
-         ;; and now save the arg-id tupes
-
          table:put the-relationship "command-arg-id-tuples" command-arg-ids
          table:put the-relationship "agent-arg-id-tuples" acting-arg-ids
-         let the-relationship-table ifelse-value (relationship-type = "Go") [relationships] [setup-relationships]
-         table:put the-relationship-table the-id the-relationship
-       ]
-     ]     
-   ]
-   
-   ;finally set the two serial numbers to the max of whatever the loaded entities are  + 1
+         table:put the-table the-id the-relationship
+      ]
+    ]
+  ]
+   ; set the two serial numbers to the max of whatever the loaded entities are  + 1
    set entity-serial (max map [first ?] table:to-list tasks) + 1
    ;; there may be zero relationships saved. So we need to first check if there are any, and otherwise just report 0
    let relationship-ids reduce sentence (list map [first ?] table:to-list relationships  map [first ?] table:to-list setup-relationships )
    set relationship-serial ifelse-value (length relationship-ids > 0) [max relationship-ids + 1] [0]
    reset-gui
+   ;; finally close the input file and open the logging file again
+   file-close-all
+   file-open "LevelSpace_logging.txt"
 end
+
 
 to load-task [a-table the-id]
   let the-name table:get a-table "name"
@@ -1438,6 +1463,17 @@ to load-model [apath the-id]
   table:put observer-entity "builtin" true
   table:put observer-entity "path" apath
   add-entity-with-id observer-entity the-id
+end
+
+to log-to-file [message]
+  file-open "LevelSpace_logging.txt"
+  file-write (list date-and-time message)
+  file-close
+end
+
+to-report entity-name-exists-in-model? [aname a-model-id]
+  ;; if the name already exists in entities, report true
+  report member? aname map [table:get ? "name"] filter [table:get ? "model" = a-model-id] map [last ? ] table:to-list tasks
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
