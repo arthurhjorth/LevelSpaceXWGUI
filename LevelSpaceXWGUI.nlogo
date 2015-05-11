@@ -105,6 +105,7 @@ to draw-aux-buttons
       xw:set-height 50
       xw:set-x aux-x
       xw:on-selected?-change [
+        log-to-file (list "go" xw:selected? relationships )
         while [ [ xw:selected? ] xw:of "go-forever"]  [
           run-go-relationships-once
         ]
@@ -140,14 +141,14 @@ to draw-aux-buttons
 
     xw:create-button "save-work" [
       xw:set-label "Save LevelSpace System"
-      xw:set-commands "save"
+      xw:set-commands "save-to-one-file"
       xw:set-x aux-x
       xw:set-y margin + 250
       xw:set-width 200
     ]
     xw:create-button "load-work" [
       xw:set-label "Load LevelSpace System"
-      xw:set-commands "load"
+      xw:set-commands "load-from-one-file"
       xw:set-x aux-x
       xw:set-y margin + 300
       xw:set-width 200
@@ -1060,10 +1061,10 @@ end
 
 to save-entity-from-widget [a-widget-name entity-id]
   let the-name [xw:name] xw:of a-widget-name
-  if entity-name-exists-in-model? the-name get-model entity xw:get "Models" [user-message (word "There is already a thing called  " the-name ". Please give it another name.") stop]
   ;; first we check if it already exists
   ;; if it doesn't, we just add a new one
   ifelse entity-id = "new"[
+    if entity-name-exists-in-model? the-name get-model entity xw:get "Models" [user-message (word "There is already a thing called  " the-name ". Please give it another name.") stop]
     new-entity-from-widget a-widget-name 
   ] [
     existing-entity-from-widget a-widget-name entity-id
@@ -1089,12 +1090,12 @@ to-report create-entity-from-widget [ widget-name ]
     set created-entity new-entity name model-id code args-list the-type "OTPL"
   ] [
     xw:ask widget-name [xw:set-color red]
+      log-to-file (list "failed creating entity: " (list model-id name code args-string the-type widget-name))
     user-message error-message
     report false
   ]
 
-  let succeeded? ifelse-value (created-entity = false) [false][true]
-  log-to-file (list "tried creating entity: " (list model-id name code args-string the-type widget-name succeeded?))
+  log-to-file (list "succeeded creating entity: " (list model-id name code args-string the-type widget-name))
 
   report created-entity
 end
@@ -1162,10 +1163,12 @@ to-report current-type
 end
 
 to run-relationship-by-id [id]
+  log-to-file (list "run-relationship-by-id"  table:get relationships id)
   run-relationship table:get relationships id
 end
 
 to run-setup-relationship-by-id [id]
+  log-to-file (list "run-setup-relationship-by-id"  table:get setup-relationships id)
   run-relationship table:get setup-relationships id
 end
 
@@ -1179,16 +1182,20 @@ end
 
 
 to run-setup-relationships-once
+  log-to-file (list "run-setup-relationships-once")
   run-relationships-once setup-relationships
   reset-ticks
 end
 
 to run-go-relationships-once
+  log-to-file (list "run-go-relationships-once")
   run-relationships-once relationships
   tick
 end
 
 to run-relationships-once [ the-relationships ]
+;  log-to-file (list "run-the-relationships-once" the-relationships)
+
   let delay (xw:get "run-speed") / 2000
   let still-need-to-delay? false
   if (delay > 0) [ 
@@ -1343,7 +1350,7 @@ to save-to-one-file
   write-all filename "setup-relationships"
   file-close-all
   file-open "LevelSpace_logging.txt"
-  log-to-file (list "everything saved")
+  log-to-file (list "everything saved" tasks relationships setup-relationships)
 end
 
 to write-all [filename table-name]
@@ -1459,7 +1466,7 @@ to load-model [apath the-id]
 end
 
 to log-to-file [message]
-  file-open "LevelSpsdace_logging.txt"
+  file-open "LevelSpace_logging.txt"
   file-write (list date-and-time message)
   file-close
 end
