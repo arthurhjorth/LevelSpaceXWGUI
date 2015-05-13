@@ -1192,7 +1192,7 @@ to run-setup-relationships-once
 end
 
 to run-go-relationships-once
-  log-to-file (list "run-go-relationships-once")
+;  log-to-file (list "run-go-relationships-once")
   run-relationships-once relationships
   tick
 end
