@@ -758,10 +758,13 @@ end
 
 to load-and-setup-model [model-path]
   if is-string? model-path [
+    let load-file last string:rex-split model-path "/" 
+    print (word "loading: " load-file)
+
     let the-model 0
-    (ls:load-gui-model model-path [set the-model ?])
+    (ls:load-gui-model load-file [set the-model ?])
     ;; add the observer of the model
-    add-observer the-model model-path
+    add-observer the-model load-file
     ;; add all a models procedures
     add-model-procedures the-model
     ;; and globals
@@ -770,7 +773,7 @@ to load-and-setup-model [model-path]
     add-model-breeds the-model
     ;; and breed variables
     add-model-breed-vars the-model
-    log-to-file (list "model loaded" model-path)
+    log-to-file (list "model loaded" load-file)
     reset-gui
   ]
 end
@@ -1384,6 +1387,7 @@ to load-from-one-file
   while [not file-at-end?][
     let the-input file-read
     foreach the-input [
+      wait .01
       ;; as long as we do things in the order they appear in, we won't skip any interdependencies
       let the-id first ?
       let the-task table:from-list last ?
