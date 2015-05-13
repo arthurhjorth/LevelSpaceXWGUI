@@ -13,8 +13,8 @@ to setup
   ask patches with [(random-float 100) < density]
     [ set pcolor green ]
   ;; make a column of burning trees
-  ask patches with [pxcor = min-pxcor]
-    [ ignite ]
+;  ask patches with [pxcor = min-pxcor]
+;    [ ignite ]
   ;; set tree counts
   set initial-trees count patches with [pcolor = green]
   set burned-trees 0
@@ -50,17 +50,21 @@ to fade-embers
 end
 
 
+to-report burned-tree-patches
+  report patches with [pcolor = 11.399999999999991]
+end
+
 ; Copyright 1997 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
 200
 10
-712
-543
-125
-125
-2.0
+720
+551
+25
+25
+10.0
 1
 10
 1
@@ -70,10 +74,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--125
-125
--125
-125
+-25
+25
+-25
+25
 1
 1
 1
@@ -503,7 +507,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.0.2
+NetLogo 5.2.0
 @#$#@#$#@
 set density 60.0
 setup
