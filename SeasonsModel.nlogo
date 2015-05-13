@@ -7,7 +7,7 @@ globals [
 breed [rays ray]     ;; packets of sunlight
 breed [IRs IR]       ;; packets of infrared radiation
 breed [heats heat]   ;; packets of heat energy
-breed [CO2s CO2]     ;; packets of carbon dioxide
+breed [ghgs gh]     ;; packets of carbon dioxide
 
 breed [clouds cloud]
 clouds-own [cloud-speed cloud-id]
@@ -22,7 +22,7 @@ to setup
   set-default-shape IRs "ray"
   set-default-shape clouds "cloud"
   set-default-shape heats "dot"
-  set-default-shape CO2s "CO2-molecule"
+  set-default-shape ghgs "co2-molecule"
   setup-world
   set temperature 12
   reset-ticks
@@ -59,7 +59,7 @@ to go
     [ update-albedo ]
   run-heat  ;; step heat
   run-IR    ;; step IR
-  run-CO2   ;; moves CO2 molecules
+  run-gh   ;; moves gh molecules
   tick
 end
 
@@ -184,14 +184,14 @@ to run-IR
       lt random 45
       set color red - 2 + random 4
     ]
-    if any? CO2s-here    ;; check for collision with CO2
+    if any? ghgs-here    ;; check for collision with gh
       [ set heading 180 - heading ]
   ]
 end
 
-to add-CO2  ;; randomly adds 25 CO2 molecules to atmosphere
+to add-gh  ;; randomly adds 25 gh molecules to atmosphere
   let sky-height sky-top - earth-top
-  create-CO2s 25 [
+  create-ghgs 25 [
     set color green
     ;; pick a random position in the sky area
     setxy random-xcor
@@ -199,19 +199,19 @@ to add-CO2  ;; randomly adds 25 CO2 molecules to atmosphere
   ]
 end
 
-to remove-CO2 ;; randomly remove 25 CO2 molecules
+to remove-gh ;; randomly remove 25 gh molecules
   repeat 25 [
-    if any? CO2s [
-      ask one-of CO2s [ die ]
+    if any? ghgs [
+      ask one-of ghgs [ die ]
     ]
   ]
 end
 
-to run-CO2
-  ask CO2s [
+to run-gh
+  ask ghgs [
     rt random 51 - 25 ;; turn a bit
     let dist 0.05 + random-float 0.1
-    ;; keep the CO2 in the sky area
+    ;; keep the gh in the sky area
     if [not shade-of? blue pcolor] of patch-ahead dist
       [ set heading 180 - heading ]
     fd dist ;; move forward a bit
@@ -297,7 +297,7 @@ sun-brightness
 sun-brightness
 0
 5
-5.83994778034709
+5.900470165813378
 0.2
 1
 NIL
@@ -339,10 +339,10 @@ PENS
 BUTTON
 7
 152
-102
+112
 185
-add CO2
-add-CO2
+Add GH Gas
+add-gh
 NIL
 1
 T
@@ -356,10 +356,10 @@ NIL
 BUTTON
 104
 152
-199
+231
 185
-remove CO2
-remove-CO2
+Remove GH gas
+remove-gh
 NIL
 1
 T
@@ -371,10 +371,10 @@ NIL
 0
 
 MONITOR
-210
-87
-303
-132
+217
+56
+310
+101
 NIL
 temperature
 1
@@ -416,21 +416,21 @@ NIL
 0
 
 MONITOR
-210
-133
-303
-178
+217
+102
+310
+147
 CO2 amount
-count CO2s
+count ghgs
 2
 1
 11
 
 BUTTON
-208
-41
-309
-75
+215
+10
+316
+44
 watch a ray
 watch one-of rays\nask subject [ pd ]
 NIL
