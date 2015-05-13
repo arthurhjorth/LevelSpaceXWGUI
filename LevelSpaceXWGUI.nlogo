@@ -1468,7 +1468,7 @@ end
 to log-to-file [message]
   file-open "LevelSpace_logging.txt"
   file-write (list date-and-time message)
-  file-close
+  file-flush
 end
 
 to-report entity-name-exists-in-model? [aname a-model-id]
