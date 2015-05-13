@@ -546,16 +546,16 @@ to add-entity-to-col [an-entity ]
       xw:set-y margin + sum map [[xw:height] xw:of ?] left-column
       set left-column lput the-name left-column
       xw:set-save-command (word "save-entity-from-widget  \"" the-name "\" " entity-id  "")
-      xw:set-delete-command (word "delete-entity " entity-id)
+      xw:set-delete-command (word "delete-entity " entity-id " true")
     ]
   ]
 end
 
-to delete-entity [an-id]
+to delete-entity [an-id prompt-user?]
   ;; check if it is being used first
   let entity-name name-of entity-from-id an-id
   let no-of-relationships length relationships-with-entity-id an-id
-  if no-of-relationships = 0 or
+  if no-of-relationships = 0 or prompt-user? or 
      user-yes-or-no? (word entity-name " is in " no-of-relationships " relationships. If you delete it, these relationships will be deleted too")
   [
     log-to-file (word "deleting entity " (list an-id entity-name table:get tasks an-id))
@@ -1149,8 +1149,9 @@ end
 
 to close-and-remove [model-id]
   ls:close model-id
+  
   foreach map [first ?] all-model-entities model-id [
-    table:remove tasks ?
+    delete-entity ? false
   ]
 end
 
