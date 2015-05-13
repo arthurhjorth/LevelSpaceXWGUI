@@ -93,7 +93,7 @@ to draw-aux-buttons
 
     xw:create-button "go-once-button" [
       xw:set-label "Go once"
-      xw:set-commands "run-go-relationships-once"
+      xw:set-commands "run-go-relationships-once log-to-file \"go once pressed\""
       xw:set-x aux-x
       xw:set-y margin + 50
       xw:set-width 200
@@ -105,7 +105,7 @@ to draw-aux-buttons
       xw:set-height 50
       xw:set-x aux-x
       xw:on-selected?-change [
-        log-to-file (list "go" xw:selected? relationships )
+        log-to-file (list "go pressed" xw:selected? relationships )
         while [ [ xw:selected? ] xw:of "go-forever"]  [
           run-go-relationships-once
         ]
