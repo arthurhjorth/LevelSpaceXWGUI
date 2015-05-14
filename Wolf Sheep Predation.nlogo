@@ -110,7 +110,7 @@ end
 
 to grow-grass  ;; patch procedure
   ;; countdown on brown patches: if reach 0, grow some grass
-  if pcolor = brown [
+  if shade-of? pcolor brown [
     ifelse countdown <= 0
       [ set pcolor green
         set countdown grass-regrowth-time ]
@@ -254,7 +254,7 @@ SWITCH
 120
 grass?
 grass?
-1
+0
 1
 -1000
 
@@ -790,7 +790,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.2-RC3
+NetLogo 5.2.0
 @#$#@#$#@
 setup
 set grass? true

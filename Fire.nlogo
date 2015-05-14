@@ -8,6 +8,7 @@ breed [embers ember]  ;; turtles gradually fading from red to near black
 
 to setup
   clear-all
+  ask patches [ set pcolor brown ]
   set-default-shape turtles "square"
   ;; make some green trees
   ask patches with [(random-float 100) < density]
