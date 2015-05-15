@@ -132,7 +132,7 @@ to draw-aux-buttons
      
 
     xw:create-button "load-new-model" [
-      xw:set-label "Load new model"
+      xw:set-label "Open Model"
       xw:set-commands "load-and-setup-model user-file"
       xw:set-x aux-x
       xw:set-y margin + 200
