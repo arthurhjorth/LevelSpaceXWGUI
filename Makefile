@@ -9,11 +9,11 @@ XW_SRCS=$(shell find $(XW_MOD) -type f -name '*.scala')
 LS_XW_MOD=modules/LSWidgets
 LS_XW_SRCS=$(shell find $(LS_XW_MOD) -type f -name '*.scala')
 LS_MOD=modules/LevelsSpace
-LS_SRCS=$(shell find $(LS_MOD) -type f -name '*.java')
+LS_SRCS=$(shell find $(LS_MOD) -type f -name '*.java') $(shell find $(LS_MOD) -type f -name '*.scala')
 CF_MOD=modules/ControlFlowExtension
 CF_SRCS=$(shell find $(CF_MOD) -type f -name '*.scala')
 CL_MOD=modules/Custom-Logging-Extension
-CF_SRCS=$(shell find $(CL_MOD) -type f -name '*.scala')
+CL_SRCS=$(shell find $(CL_MOD) -type f -name '*.scala')
 GIT_SHA1=$(shell git log | head -1 | cut -d\  -f2 )
 GIT_SHA1_SHORT=$(shell echo $(GIT_SHA1) | sed 's/.\{32\}$$//' )
 RELEASE_NAME=release-$(GIT_SHA1_SHORT)
@@ -56,11 +56,11 @@ xw/widgets/LSWidgets xw/widgets/LSWidgets/LSWidgets.jar: xw/xw.jar $(LS_XW_MOD)/
 $(LS_XW_MOD)/LSWidgets.jar: $(LS_XW_SRCS) $(LS_XW_MOD)/src $(LS_XW_MOD)/lib/extrawidgets-api.jar
 	cd $(LS_XW_MOD); $(SBT) package
 
-ls/ls.jar: $(LS_MOD)/extensions/ls
+ls/ls.jar ls/guava-18.0.jar: $(LS_MOD)/extensions/ls/ls.jar
 	mkdir -p ls
 	cp $(LS_MOD)/extensions/ls/* ls
 
-$(LS_MOD)/extensions/ls: $(LS_MOD)/src $(LS_SRCS)
+$(LS_MOD)/extensions/ls/ls.jar: $(LS_SRCS)
 	cd $(LS_MOD); $(SBT) package
 
 $(CF_MOD)/cf.jar: $(CF_MOD)/src $(CF_SRCS)
